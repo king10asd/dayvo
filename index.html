@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dayvo - Share & Book</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FriendCal">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50'>📅</text></svg>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* LOGIN */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--card);
+            padding: 48px 38px;
+            border-radius: 28px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1)
+            }
+        }
+
+        .logo-icon {
+            width: 68px;
+            height: 68px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 22px;
+            font-size: 34px;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .login-card h1 {
+            font-size: 26px;
+            margin-bottom: 6px;
+        }
+
+        .login-card .subtitle {
+            color: var(--text-light);
+            margin-bottom: 28px;
+            font-size: 14px;
+        }
+
+        .oauth-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 13px 18px;
+            margin: 9px 0;
+            border: 2px solid var(--border);
+            border-radius: 13px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .oauth-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .oauth-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            padding: 0 14px;
+        }
+
+        /* INPUTS */
+        input,
+        button,
+        select,
+        textarea {
+            width: 100%;
+            padding: 13px 16px;
+            margin: 7px 0;
+            border: 2px solid var(--border);
+            border-radius: 13px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+            background: white;
+            color: var(--text);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .ph {
+            display: flex;
+            gap: 7px;
+            margin: 7px 0;
+        }
+
+        .ph select {
+            width: 128px;
+            flex-shrink: 0;
+            margin: 0;
+            padding: 13px 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .ph input {
+            flex: 1;
+            margin: 0;
+        }
+
+        .btn-p {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 13px;
+        }
+
+        .btn-p:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
+        }
+
+        /* APP */
+        .app {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 18px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .top-bar h2 {
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: var(--card);
+            padding: 7px 14px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .user-chip:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .av {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .av img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* PROFILE DROPDOWN */
+        .user-chip {
+            position: relative;
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border);
+            min-width: 220px;
+            z-index: 500;
+            opacity: 0;
+            transform: translateY(-8px) scale(0.96);
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .profile-dropdown.open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .pd-header {
+            padding: 16px 18px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .pd-name {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .pd-phone {
+            font-size: 12px;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .pd-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .pd-item:hover {
+            background: #f1f5f9;
+        }
+
+        .pd-item.danger {
+            color: var(--danger);
+        }
+
+        .pd-item.danger:hover {
+            background: #fef2f2;
+        }
+
+        .pd-sep {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        /* ACTION BUTTONS ROW */
+        .action-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 10px 16px;
+            margin: 0;
+            border: none;
+            border-radius: 13px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: white;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-btn.ab-invite {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .action-btn.ab-group {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+
+        .action-btn.ab-import {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+
+        .action-btn.ab-export {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        /* TODAY ICON BUTTON */
+        .cal-nav .btn-today {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            margin: 0;
+            border-radius: 11px;
+            font-size: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+        }
+
+        .cal-nav .btn-today:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+        }
+
+        /* INSTALL APP BUTTON */
+        .install-bar {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .install-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 22px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 2px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            transition: all 0.2s;
+            width: auto;
+            margin: 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .install-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+            color: var(--primary);
+        }
+
+        .install-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--card);
+            border-radius: 22px;
+            padding: 28px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            animation: fadeIn 0.35s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .card h3 {
+            font-size: 17px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sep {
+            height: 1px;
+            background: var(--border);
+            margin: 22px 0;
+        }
+
+        /* PROFILE */
+        .p-head {
+            text-align: center;
+            padding: 16px 0 8px;
+        }
+
+        .p-av-wrap {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 14px;
+        }
+
+        .p-av {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 44px;
+            font-weight: bold;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .p-av img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .p-av-edit {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 33px;
+            height: 33px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            border: 3px solid white;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .p-av-edit:hover {
+            transform: scale(1.1);
+        }
+
+        .p-name {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 3px;
+        }
+
+        .p-phone {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        /* FRIENDS */
+        .friends-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 11px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .friends-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .friends-scroll::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .friends-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .f-chip {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 7px;
+            border-radius: 14px;
+            transition: 0.2s;
+            border: 2px solid transparent;
+            min-width: 70px;
+        }
+
+        .f-chip:hover {
+            background: #eef2ff;
+            border-color: var(--primary);
+        }
+
+        .f-av {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            overflow: hidden;
+        }
+
+        .f-av img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .f-name {
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            max-width: 65px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .f-btns {
+            display: flex;
+            gap: 3px;
+            margin-top: 2px;
+        }
+
+        .fb {
+            font-size: 10px;
+            padding: 3px 7px;
+            border-radius: 7px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            margin: 0;
+            width: auto;
+        }
+
+        .fb-v {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .fb-i {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .fb-r {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .no-friends {
+            color: var(--text-light);
+            font-size: 13px;
+            text-align: center;
+            padding: 14px;
+            background: #f8fafc;
+            border-radius: 14px;
+            border: 2px dashed var(--border);
+        }
+
+        /* QR / SHARE */
+        .share-box {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 18px;
+            padding: 22px;
+            text-align: center;
+            border: 2px dashed var(--border);
+        }
+
+        .share-box h4 {
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+
+        .share-box .sh-sub {
+            color: var(--text-light);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 12px auto;
+            padding: 12px;
+            background: white;
+            border-radius: 14px;
+            width: fit-content;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+        }
+
+        .sh-link {
+            display: flex;
+            gap: 7px;
+            margin-top: 12px;
+        }
+
+        .sh-link input {
+            flex: 1;
+            margin: 0;
+            font-size: 12px;
+        }
+
+        .sh-link button {
+            width: auto;
+            margin: 0;
+            padding: 11px 18px;
+            white-space: nowrap;
+        }
+
+        .wa-share-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 11px;
+            padding: 11px 22px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: auto;
+        }
+
+        .wa-share-btn:hover {
+            background: #1ebe5d;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 18px rgba(37, 211, 102, 0.35);
+        }
+
+        /* CALENDAR */
+        .cal-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .cal-title {
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .cal-nav {
+            display: flex;
+            gap: 7px;
+        }
+
+        .cal-nav button {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            margin: 0;
+            border-radius: 11px;
+            font-size: 17px;
+            background: var(--card);
+            border: 2px solid var(--border);
+            cursor: pointer;
+        }
+
+        .cal-nav button:hover {
+            border-color: var(--primary);
+        }
+
+        .view-sw {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 18px;
+            justify-content: center;
+        }
+
+        .view-sw button {
+            width: auto;
+            padding: 9px 20px;
+            margin: 0;
+            border-radius: 11px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: var(--text-light);
+            border: none;
+            cursor: pointer;
+        }
+
+        .view-sw button.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .day-grid {
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .h-row {
+            display: flex;
+            align-items: stretch;
+            border-bottom: 1px solid var(--border);
+            min-height: 50px;
+        }
+
+        .h-row.has-label {
+            min-height: 68px;
+        }
+
+        .h-row:last-child {
+            border-bottom: none;
+        }
+
+        .h-lbl {
+            width: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 12px;
+            background: #f8fafc;
+            border-right: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .h-slot {
+            flex: 1;
+            padding: 9px 13px;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .h-slot:hover {
+            background: #f1f5f9;
+        }
+
+        .h-slot.busy,
+        .h-slot.blocked {
+            background: #fef2f2;
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .h-slot .sl {
+            flex: 1;
+        }
+
+        .h-slot .sa {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 18px;
+            background: var(--primary);
+            color: white;
+            opacity: 0;
+            transition: 0.2s;
+        }
+
+        .h-slot:hover .sa {
+            opacity: 1;
+        }
+
+        .slot-tag {
+            flex: 1;
+            margin: 0;
+            padding: 3px 9px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px dashed #fca5a5;
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.7);
+            color: #b91c1c;
+            height: 24px;
+            width: 100%;
+            cursor: text;
+        }
+
+        .slot-tag:focus {
+            border-color: #ef4444;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+            outline: none;
+        }
+
+        .wk-grid {
+            display: grid;
+            grid-template-columns: 50px repeat(7, 1fr);
+            gap: 3px;
+            font-size: 11px;
+        }
+
+        .wk-hdr {
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary);
+            padding: 8px 3px;
+            font-size: 11px;
+        }
+
+        .wk-hl {
+            text-align: center;
+            padding: 5px 2px;
+            color: var(--text-light);
+            font-size: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wk-c {
+            background: #f8fafc;
+            border-radius: 7px;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            cursor: pointer;
+            transition: 0.15s;
+            font-weight: 600;
+        }
+
+        .wk-c:hover {
+            background: #e0e7ff;
+        }
+
+        .wk-c.busy,
+        .wk-c.blocked {
+            background: #fecaca;
+            color: var(--danger);
+        }
+
+        .wk-c.today {
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
+        .mo-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .mo-hdr {
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary);
+            padding: 9px 4px;
+            font-size: 13px;
+        }
+
+        .mo-cell {
+            aspect-ratio: 1;
+            background: #f8fafc;
+            border-radius: 13px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+            padding: 5px;
+        }
+
+        .mo-cell:hover {
+            border-color: var(--primary);
+            background: #eef2ff;
+            transform: translateY(-2px);
+        }
+
+        .mo-cell .dn {
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .mo-cell .ds {
+            font-size: 9px;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+
+        .mo-cell.other-m {
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .mo-cell.today {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .mo-cell.busy,
+        .mo-cell.blocked {
+            background: #fef2f2;
+        }
+
+        .mo-cell.busy .dn,
+        .mo-cell.blocked .dn {
+            color: var(--danger);
+        }
+
+        /* BOOKINGS */
+        .bk-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border-radius: 14px;
+            margin-bottom: 9px;
+            border: 1px solid var(--border);
+            transition: 0.2s;
+            gap: 10px;
+        }
+
+        .bk-item:hover {
+            border-color: var(--primary);
+        }
+
+        .bk-info {
+            flex: 1;
+        }
+
+        .bk-name {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .bk-meta {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 3px;
+        }
+
+        .bk-acts {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .bs {
+            width: auto;
+            padding: 7px 12px;
+            margin: 0;
+            font-size: 12px;
+            border-radius: 9px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .bs-acc {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+
+        .bs-rej {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .bs-cal {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 36px 16px;
+            color: var(--text-light);
+        }
+
+        .empty .em {
+            font-size: 36px;
+            margin-bottom: 9px;
+            display: block;
+        }
+
+        .sbadge {
+            display: inline-block;
+            padding: 3px 11px;
+            border-radius: 18px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 7px;
+        }
+
+        /* MODALS */
+        .modal-ov {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 18px;
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal {
+            background: var(--card);
+            padding: 26px;
+            border-radius: 22px;
+            width: 100%;
+            max-width: 470px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            font-size: 19px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .mr {
+            margin-bottom: 12px;
+        }
+
+        .mr label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .mr input,
+        .mr select,
+        .mr textarea {
+            margin: 0;
+        }
+
+        .m-acts {
+            display: flex;
+            gap: 8px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .m-acts button {
+            flex: 1;
+            margin: 0;
+            min-width: 100px;
+        }
+
+        .btn-x {
+            background: #f1f5f9;
+            color: var(--text);
+            border: none;
+            cursor: pointer;
+        }
+
+        .wa-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 13px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 13px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .wa-btn:hover {
+            background: #1ebe5d;
+        }
+
+        /* GROUP INVITE */
+        .gc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin: 9px 0;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        .gc-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 12px;
+            background: #f8fafc;
+            border-radius: 13px;
+            border: 1px solid var(--border);
+        }
+
+        .gc-av {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .gc-info {
+            flex: 1;
+        }
+
+        .gc-ph {
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .gc-send {
+            padding: 7px 12px;
+            border: none;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+
+        .gc-send.unsent {
+            background: #25D366;
+            color: white;
+        }
+
+        .gc-send.unsent:hover {
+            background: #1ebe5d;
+        }
+
+        .gc-send.done {
+            background: #dcfce7;
+            color: #16a34a;
+            cursor: default;
+        }
+
+        .gc-del {
+            padding: 6px 9px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            background: #fee2e2;
+            color: var(--danger);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .prog-wrap {
+            margin: 9px 0 3px;
+        }
+
+        .prog-bar {
+            height: 5px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #25D366, #128C7E);
+            border-radius: 10px;
+            transition: width 0.4s ease;
+        }
+
+        .prog-lbl {
+            font-size: 11px;
+            color: var(--text-light);
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        /* PUBLIC */
+        .pub-banner {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 18px 22px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .pub-av {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .pub-av img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .pub-name {
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .pub-sub {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: var(--text);
+            color: white;
+            padding: 13px 26px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 2000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 38px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media(max-width:600px) {
+            .login-card {
+                padding: 32px 20px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .sh-link {
+                flex-direction: column;
+            }
+
+            .sh-link button {
+                width: 100%;
+            }
+
+            .wk-grid {
+                grid-template-columns: 34px repeat(7, 1fr);
+            }
+            
+            .ph select {
+                width: 90px;
+                padding: 13px 4px;
+                font-size: 11px;
+            }
+            
+            .modal {
+                padding: 20px 16px;
+                margin: auto;
+            }
+            
+            .modal-ov {
+                align-items: flex-start;
+                padding-top: 40px;
+            }
+            
+            .profile-dropdown {
+                right: -10px;
+            }
+        }
+        
+        .h-row.night-time {
+            background: #f8fafc;
+            opacity: 0.9;
+        }
+        
+        .h-row.night-time .h-lbl {
+            color: #64748b;
+        }
+        
+        .h-slot.night-time {
+            background: rgba(0,0,0,0.02);
+        }
+        
+        .wk-c.night-time {
+            background: rgba(0,0,0,0.02);
+            color: #64748b;
+        }
+        
+        .wk-hl.night-time {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="logo-icon">📅</div>
+            <h1>Dayvo</h1>
+            <p class="subtitle">Share your calendar. Book with friends.</p>
+            <button class="oauth-btn" onclick="oAuth('google')">
+                <svg viewBox="0 0 24 24">
+                    <path fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                Continue with Google
+            </button>
+            <button class="oauth-btn" onclick="oAuth('apple')">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.98 1.08-3.11-1.05.05-2.31.7-3.06 1.55-.67.76-1.26 1.98-1.1 3.13 1.17.09 2.36-.68 3.08-1.57z" />
+                </svg>
+                Continue with Apple
+            </button>
+            <div class="divider"><span>or</span></div>
+            <input type="text" id="guestName" placeholder="Your Name">
+            <div class="ph">
+                <select id="lCC">
+                    <option value="+966">🇸🇦 +966</option>
+                    <option value="+971">🇦🇪 +971</option>
+                    <option value="+965">🇰🇼 +965</option>
+                    <option value="+974">🇶🇦 +974</option>
+                    <option value="+973">🇧🇭 +973</option>
+                    <option value="+968">🇴🇲 +968</option>
+                    <option value="+962">🇯🇴 +962</option>
+                    <option value="+20">🇪🇬 +20</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                </select>
+                <input type="tel" id="guestPhone" placeholder="5xxxxxxxx">
+            </div>
+            <button class="btn-p" onclick="guestLogin()">Continue as Guest</button>
+            <p style="margin-top:14px;font-size:11px;color:#94a3b8;">Data stored locally in your browser</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="mainApp" class="app hidden">
+        <div class="top-bar">
+            <h2>📅 Dayvo</h2>
+            <div class="user-chip" onclick="toggleProfileMenu(event)">
+                <div class="av" id="navAv"></div>
+                <span id="navName" style="font-weight:600;font-size:13px;"></span>
+                <span style="font-size:10px;color:var(--text-light);">▼</span>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="pd-header">
+                        <div class="pd-name" id="pdName"></div>
+                        <div class="pd-phone" id="pdPhone"></div>
+                    </div>
+                    <div class="pd-item" onclick="event.stopPropagation();showTab('profile')">👤 My Profile & Friends
+                    </div>
+                    <div class="pd-item" onclick="event.stopPropagation();showTab('calendar')">📅 Calendar</div>
+                    <div class="pd-sep"></div>
+                    <div class="pd-item danger" onclick="event.stopPropagation();logout()">🚪 Log Out</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INSTALL APP BUTTON -->
+        <div class="install-bar" id="installBar" style="display:none;">
+            <button class="install-btn" id="installBtn" onclick="installApp()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Add to Home Screen
+            </button>
+        </div>
+
+        <!-- PROFILE -->
+        <div id="profileTab">
+            <div class="card">
+                <div class="p-head">
+                    <div class="p-av-wrap">
+                        <div class="p-av" id="pAv" onclick="document.getElementById('avInput').click()">👤</div>
+                        <div class="p-av-edit" onclick="document.getElementById('avInput').click()">📷</div>
+                        <input type="file" id="avInput" accept="image/*" class="hidden" onchange="updateAv(this)">
+                    </div>
+                    <div class="p-name" id="pName"></div>
+                    <div class="p-phone" id="pPhone"></div>
+                </div>
+
+                <!-- FRIENDS -->
+                <div style="margin-bottom:18px;">
+                    <div class="friends-title">👥 My Friends <span id="fCount"
+                            style="font-size:12px;color:var(--text-light);font-weight:400;"></span></div>
+                    <div id="friendsList"></div>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- SHARE / QR -->
+                <div class="share-box">
+                    <h4>🔗 Share Your Calendar</h4>
+                    <p class="sh-sub">Friends who scan this QR are added to your friends list automatically</p>
+                    <div id="qrcode"></div>
+                    <button class="wa-share-btn" onclick="waShare()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                        </svg>
+                        Share via WhatsApp
+                    </button>
+                    <div class="sh-link">
+                        <input type="text" id="shareLink" readonly>
+                        <button class="btn-p" onclick="copyLink()" style="width:auto;padding:11px 18px;">📋
+                            Copy</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CALENDAR -->
+        <div id="calendarTab" class="hidden">
+            <div class="action-row">
+                <button class="action-btn ab-invite" onclick="openSingle()">👤 Invite Friend</button>
+                <button class="action-btn ab-group" onclick="openGroup()">👥 Invite Group</button>
+                <button class="action-btn ab-import" onclick="importFromGCal()">📥 Import</button>
+                <button class="action-btn ab-export" onclick="exportToGCal()">📤 Export</button>
+            </div>
+            <div class="card">
+                <div class="cal-toolbar">
+                    <div class="cal-nav">
+                        <button onclick="chDate(-1)">◀</button>
+                        <button class="btn-today" onclick="goToday()" title="Go to today">◉</button>
+                        <button onclick="chDate(1)">▶</button>
+                    </div>
+                    <div class="cal-title" id="calTitle"></div>
+                </div>
+                <div class="view-sw">
+                    <button onclick="setView('day')" id="view-day">📆 Day</button>
+                    <button onclick="setView('week')" id="view-week">🗓 Week</button>
+                    <button onclick="setView('month')" id="view-month" class="active">📅 Month</button>
+                </div>
+                <div id="calView"></div>
+                <div
+                    style="display:flex;gap:14px;justify-content:center;margin-top:18px;font-size:12px;flex-wrap:wrap;">
+                    <span><span
+                            style="display:inline-block;width:11px;height:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>Available</span>
+                    <span><span
+                            style="display:inline-block;width:11px;height:11px;background:#fef2f2;border:1px solid #fecaca;border-radius:3px;margin-right:4px;vertical-align:middle;"></span><span
+                            style="color:var(--danger);font-weight:600;">Busy/Blocked</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOOKINGS -->
+        <div id="bookingsTab" class="hidden"></div>
+    </div>
+
+    <!-- PUBLIC VIEW -->
+    <div id="publicView" class="app hidden">
+        <div class="pub-banner">
+            <div class="pub-av" id="pubAv">👤</div>
+            <div>
+                <div class="pub-name" id="pubName"></div>
+                <div class="pub-sub">Book an appointment below</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="cal-toolbar">
+                <div class="cal-nav">
+                    <button onclick="chDate(-1)">◀</button>
+                    <button class="btn-today" onclick="goToday()" title="Go to today">◉</button>
+                    <button onclick="chDate(1)">▶</button>
+                </div>
+                <div class="cal-title" id="pubTitle"></div>
+            </div>
+            <div class="view-sw">
+                <button onclick="setView('day')" id="pub-view-day">📆 Day</button>
+                <button onclick="setView('week')" id="pub-view-week">🗓 Week</button>
+                <button onclick="setView('month')" id="pub-view-month" class="active">📅 Month</button>
+            </div>
+            <div id="pubCalView"></div>
+            <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;font-size:12px;flex-wrap:wrap;">
+                <span><span
+                        style="display:inline-block;width:11px;height:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>Available</span>
+                <span><span
+                        style="display:inline-block;width:11px;height:11px;background:#fef2f2;border:1px solid #fecaca;border-radius:3px;margin-right:4px;vertical-align:middle;"></span><span
+                        style="color:var(--danger);font-weight:600;">Busy</span></span>
+            </div>
+        </div>
+        <div style="text-align:center;margin-top:18px;">
+            <button class="btn-p" onclick="window.location.href=window.location.pathname"
+                style="width:auto;padding:13px 30px;">📅 Get Your Own Calendar</button>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Single Invite -->
+    <div id="siModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('siModal')">
+        <div class="modal">
+            <h3>👤 Invite a Friend</h3>
+            <div class="mr"><label>Friend's WhatsApp Number</label>
+                <div class="ph" style="margin:0;"><select id="siCC">
+                        <option value="966">🇸🇦 +966</option>
+                        <option value="971">🇦🇪 +971</option>
+                        <option value="965">🇰🇼 +965</option>
+                        <option value="974">🇶🇦 +974</option>
+                        <option value="20">🇪🇬 +20</option>
+                        <option value="1">🇺🇸 +1</option>
+                        <option value="44">🇬🇧 +44</option>
+                    </select><input type="tel" id="siPhone" placeholder="5xxxxxxxx" style="margin:0;"></div>
+            </div>
+            <div class="mr"><label>Suggested Date</label><input type="date" id="siDate" style="margin:0;"></div>
+            <div style="display:flex;gap:9px;">
+                <div class="mr" style="flex:1;"><label>From</label><input type="time" id="siStart" value="10:00"
+                        style="margin:0;"></div>
+                <div class="mr" style="flex:1;"><label>To</label><input type="time" id="siEnd" value="11:00"
+                        style="margin:0;"></div>
+            </div>
+            <div class="mr"><label>Message (optional)</label><textarea id="siNote" rows="2" style="margin:0;"
+                    placeholder="Let's meet!"></textarea></div>
+            <div class="m-acts">
+                <button class="wa-btn" onclick="sendSingle()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
+                        <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    Send via WhatsApp
+                </button>
+                <button class="bs-cal bs" onclick="addSingleCal()"
+                    style="flex:1;padding:13px;font-size:13px;border-radius:13px;">📅 Calendar</button>
+                <button class="btn-x" onclick="cModal('siModal')"
+                    style="flex:1;padding:13px;font-size:13px;border-radius:13px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Group Invite -->
+    <div id="grModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('grModal')">
+        <div class="modal">
+            <h3>👥 Invite Group</h3>
+            <div class="mr"><label>Suggested Date</label><input type="date" id="grDate" style="margin:0;"></div>
+            <div style="display:flex;gap:9px;">
+                <div class="mr" style="flex:1;"><label>From</label><input type="time" id="grStart" value="10:00"
+                        style="margin:0;"></div>
+                <div class="mr" style="flex:1;"><label>To</label><input type="time" id="grEnd" value="11:00"
+                        style="margin:0;"></div>
+            </div>
+            <div class="mr"><label>Message (optional)</label><textarea id="grNote" rows="2" style="margin:0;"
+                    placeholder="You're invited!"></textarea></div>
+            <div class="sep" style="margin:14px 0;"></div>
+            <div class="mr">
+                <label>Add Phone Number</label>
+                <div style="display:flex;gap:7px;align-items:center;">
+                    <div class="ph" style="margin:0;flex:1;"><select id="grCC">
+                            <option value="966">🇸🇦 +966</option>
+                            <option value="971">🇦🇪 +971</option>
+                            <option value="965">🇰🇼 +965</option>
+                            <option value="974">🇶🇦 +974</option>
+                            <option value="20">🇪🇬 +20</option>
+                            <option value="1">🇺🇸 +1</option>
+                            <option value="44">🇬🇧 +44</option>
+                        </select><input type="tel" id="grPhone" placeholder="5xxxxxxxx" style="margin:0;"
+                            onkeydown="if(event.key==='Enter')addGC()"></div>
+                    <button onclick="addGC()"
+                        style="width:auto;padding:13px 14px;margin:0;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:16px;">+</button>
+                </div>
+            </div>
+            <div id="grProgress" class="hidden prog-wrap">
+                <div class="prog-bar">
+                    <div class="prog-fill" id="grFill" style="width:0%"></div>
+                </div>
+                <div class="prog-lbl" id="grLbl"></div>
+            </div>
+            <div class="gc-list" id="grList"></div>
+            <div class="m-acts" style="margin-top:12px;">
+                <button class="wa-btn" onclick="sendAllGC()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
+                        <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    Send to All
+                </button>
+                <button class="btn-x" onclick="cModal('grModal')"
+                    style="flex:1;padding:13px;font-size:13px;border-radius:13px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        /* ── STORE ── */
+        const S = {
+            g: k => { try { return JSON.parse(localStorage.getItem('fc_' + k) || 'null'); } catch (e) { return null; } },
+            s: (k, v) => localStorage.setItem('fc_' + k, JSON.stringify(v)),
+            users: () => S.g('users') || {},
+            setUsers: u => S.s('users', u),
+            bookings: () => S.g('bookings') || [],
+            setBookings: b => S.s('bookings', b),
+            blocks: () => S.g('blocks') || [],
+            setBlocks: b => S.s('blocks', b),
+            friends: uid => S.g('fr_' + uid) || [],
+            setFriends: (uid, f) => S.s('fr_' + uid, f),
+            cur: () => S.g('cur'),
+            setCur: u => S.s('cur', u),
+        };
+
+        /* ── STATE ── */
+        let CU = null, VU = null, curView = 'month', curDate = new Date(), GC = [];
+
+        /* ── UTILS ── */
+        const $ = id => document.getElementById(id);
+        function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+        function fmtD(d) { return d.toISOString().split('T')[0]; }
+        function pTime(t) { const [h, m] = t.split(':').map(Number); return h + m / 60; }
+        function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+        function getUrl() { return window.location.href.split('?')[0].split('#')[0]; }
+        function shareUrl(uid) { return getUrl() + '?user=' + encodeURIComponent(uid); }
+        function cModal(id) { $(id).classList.add('hidden'); }
+        function ccVal(id) { return $(id).value; }
+        function numVal(id) { return $(id).value.trim().replace(/^0+/, ''); }
+        function fullNum(ccId, numId) { return ccVal(ccId).replace('+', '') + numVal(numId); }
+        function fullNumDisp(ccId, numId) { return ccVal(ccId) + numVal(numId); }
+        
+        function formatTimeAmpm(hour) {
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const h = hour % 12 || 12;
+            return `${h}:00 ${ampm}`;
+        }
+
+        /* ── AUTH ── */
+        // ⚠️ Replace with YOUR Firebase config from https://console.firebase.google.com
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHyVe-MuG8Ryi0uN61przLAoqHmwdkcTE",
+            authDomain: "scheduleit-fb644.firebaseapp.com",
+            projectId: "scheduleit-fb644",
+            storageBucket: "scheduleit-fb644.firebasestorage.app",
+            messagingSenderId: "943676899675",
+            appId: "1:943676899675:web:d0c36662a70af29b301a7e",
+            measurementId: "G-L58H3JLC2E"
+        };
+        let firebaseReady = false;
+        try {
+            if (typeof firebase !== 'undefined') { firebase.initializeApp(firebaseConfig); firebaseReady = firebaseConfig.apiKey !== 'YOUR_API_KEY'; }
+        } catch (e) { console.warn('Firebase init skipped:', e.message); }
+
+        async function oAuth(provider) {
+            if (!firebaseReady) {
+                // Fallback: use guest login when Firebase is not configured
+                toast('⚠️ OAuth not configured — using guest login');
+                guestLogin();
+                return;
+            }
+            try {
+                let authProvider;
+                if (provider === 'google') authProvider = new firebase.auth.GoogleAuthProvider();
+                else if (provider === 'apple') authProvider = new firebase.auth.OAuthProvider('apple.com');
+                else { guestLogin(); return; }
+                const result = await firebase.auth().signInWithPopup(authProvider);
+                const u = result.user;
+                const name = u.displayName || 'User';
+                const phone = u.phoneNumber || u.email || u.uid;
+                const avatar = u.photoURL || null;
+                // Store user with Firebase UID
+                let us = S.users(), uid = Object.entries(us).find(([, x]) => x.firebaseUid === u.uid)?.[0];
+                if (!uid) { uid = genId(); us[uid] = { id: uid, name, phone, provider, avatar, firebaseUid: u.uid, email: u.email, created: new Date().toISOString() }; S.setUsers(us); }
+                else { us[uid].name = name; if (avatar) us[uid].avatar = avatar; S.setUsers(us); }
+                CU = us[uid]; S.setCur(CU); enterApp();
+                toast('✅ Signed in as ' + name);
+            } catch (e) {
+                console.error('Auth error:', e);
+                if (e.code === 'auth/popup-closed-by-user') toast('⚠️ Sign-in cancelled');
+                else toast('❌ Sign-in failed: ' + (e.message || 'Unknown error'));
+            }
+        }
+        function guestLogin() { const n = $('guestName').value.trim(), num = numVal('guestPhone'); if (!n || !num) { toast('❌ Enter name and phone'); return; } doLogin(n, ccVal('lCC') + num, 'guest'); }
+        function doLogin(name, phone, provider) {
+            let us = S.users(), uid = Object.entries(us).find(([, u]) => u.phone === phone)?.[0];
+            if (!uid) { uid = genId(); us[uid] = { id: uid, name, phone, provider, avatar: null, created: new Date().toISOString() }; S.setUsers(us); }
+            else { us[uid].name = name; S.setUsers(us); }
+            CU = us[uid]; S.setCur(CU); enterApp();
+        }
+        function logout() { CU = null; S.setCur(null); location.href = getUrl(); }
+        function toggleProfileMenu(e) { e.stopPropagation(); const dd = $('profileDropdown'); dd.classList.toggle('open'); }
+        document.addEventListener('click', () => { const dd = $('profileDropdown'); if (dd) dd.classList.remove('open'); });
+
+        /* ── AVATAR ── */
+        function updateAv(inp) {
+            const f = inp.files[0]; if (!f) return;
+            const r = new FileReader(); r.onload = e => { let us = S.users(); us[CU.id].avatar = e.target.result; S.setUsers(us); CU = us[CU.id]; renderProfile(); toast('✅ Photo updated'); }; r.readAsDataURL(f);
+        }
+
+        /* ── FRIENDS ── */
+        function addFriend(friendUser) {
+            if (!CU || CU.id === friendUser.id) return;
+            let fr = S.friends(CU.id);
+            if (!fr.find(f => f.id === friendUser.id)) { fr.push({ id: friendUser.id, addedAt: new Date().toISOString() }); S.setFriends(CU.id, fr); }
+        }
+        function getFriends() {
+            if (!CU) return [];
+            const us = S.users();
+            return S.friends(CU.id).map(f => us[f.id]).filter(Boolean);
+        }
+        function removeFriend(fid) {
+            S.setFriends(CU.id, S.friends(CU.id).filter(f => f.id !== fid));
+            renderFriends(); toast('Removed from friends');
+        }
+        function renderFriends() {
+            const el = $('friendsList'), fr = getFriends();
+            $('fCount').textContent = fr.length ? `(${fr.length})` : '';
+            if (!fr.length) { el.innerHTML = '<div class="no-friends">No friends yet — share your QR code and friends are added automatically 👆</div>'; return; }
+            const avH = u => { const s = 'width:100%;height:100%;object-fit:cover;'; return u.avatar ? `<img src="${u.avatar}" style="${s}">` : `${u.name.charAt(0).toUpperCase()}`; };
+            el.innerHTML = `<div class="friends-scroll">${fr.map(u => `
+        <div class="f-chip">
+            <div class="f-av">${avH(u)}</div>
+            <div class="f-name">${u.name}</div>
+            <div class="f-btns">
+                <button class="fb fb-v" onclick="window.open('${shareUrl(u.id)}','_blank')">📅</button>
+                <button class="fb fb-i" onclick="prefillInvite('${u.id}')">📨</button>
+                <button class="fb fb-r" onclick="removeFriend('${u.id}')">✕</button>
+            </div>
+        </div>`).join('')}</div>`;
+        }
+        function prefillInvite(uid) {
+            const u = S.users()[uid]; if (!u) return;
+            openSingle();
+            const ph = u.phone;
+            const codes = ['966', '971', '965', '974', '973', '968', '962', '20', '1', '44'];
+            for (const cc of codes) { if (ph.startsWith('+' + cc)) { $('siCC').value = cc; $('siPhone').value = ph.slice(cc.length + 1); break; } }
+        }
+
+        /* ── PROFILE ── */
+        function renderProfile() {
+            if (!CU) return;
+            $('pName').textContent = CU.name; $('pPhone').textContent = '📱 ' + CU.phone; $('navName').textContent = CU.name;
+            $('pdName').textContent = CU.name; $('pdPhone').textContent = CU.phone;
+            const setAv = (el) => { if (CU.avatar) el.innerHTML = `<img src="${CU.avatar}" style="width:100%;height:100%;object-fit:cover;">`; else el.textContent = CU.name.charAt(0).toUpperCase(); };
+            setAv($('pAv')); setAv($('navAv'));
+            const url = shareUrl(CU.id); $('shareLink').value = url;
+            const qr = $('qrcode'); qr.innerHTML = '';
+            try { new QRCode(qr, { text: url, width: 155, height: 155, colorDark: '#4f46e5', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); }
+            catch (e) { qr.innerHTML = '<div style="padding:14px;color:#999;">QR unavailable</div>'; }
+            renderFriends();
+        }
+        function copyLink() { const v = $('shareLink').value; navigator.clipboard.writeText(v).then(() => toast('📋 Copied!')).catch(() => { $('shareLink').select(); document.execCommand('copy'); toast('📋 Copied!'); }); }
+        function waShare() { const url = shareUrl(CU.id); window.open(`https://wa.me/?text=${encodeURIComponent('📅 Book a slot with me!\n\n' + url)}`, '_blank'); }
+
+        /* ── TABS ── */
+        function showTab(t) {
+            $('profileDropdown')?.classList.remove('open');
+            ['profile', 'calendar', 'bookings'].forEach(x => { $(x + 'Tab')?.classList.add('hidden'); });
+            $(t + 'Tab')?.classList.remove('hidden');
+            if (t === 'profile') renderProfile();
+            if (t === 'calendar') renderCal();
+            if (t === 'bookings') loadBk();
+        }
+
+        /* ── CALENDAR DATA ── */
+        function bksFor(ds, uid, st) { return S.bookings().filter(b => b.owner === uid && b.date === ds && (!st || b.status === st)); }
+        function blksFor(ds, uid) { return S.blocks().filter(b => b.owner === uid && b.date === ds); }
+        function isBusy(ds, h, uid) { return bksFor(ds, uid, 'accepted').some(b => h >= pTime(b.start) && h < pTime(b.end)) || blksFor(ds, uid).some(b => h >= pTime(b.start) && h < pTime(b.end)); }
+        function dayBusy(ds, uid) { return bksFor(ds, uid, 'accepted').length > 0 || blksFor(ds, uid).length > 0; }
+
+        /* ── CALENDAR VIEWS ── */
+        function setView(v) { curView = v; const p = VU ? 'pub-' : ''; document.querySelectorAll('.view-sw button').forEach(b => b.classList.remove('active')); $(p + 'view-' + v)?.classList.add('active'); renderCal(); }
+        function chDate(d) { if (curView === 'day') curDate.setDate(curDate.getDate() + d); else if (curView === 'week') curDate.setDate(curDate.getDate() + d * 7); else curDate.setMonth(curDate.getMonth() + d); renderCal(); }
+        function goToday() { curDate = new Date(); renderCal(); }
+        function renderCal() {
+            const uid = VU ? VU.id : CU.id, pub = !!VU;
+            const el = $(pub ? 'pubCalView' : 'calView'), tl = $(pub ? 'pubTitle' : 'calTitle');
+            if (curView === 'day') rDay(el, tl, uid, pub);
+            else if (curView === 'week') rWeek(el, tl, uid, pub);
+            else rMonth(el, tl, uid, pub);
+        }
+        function toggleSlot(ds, hour) {
+            const t = hour.toString().padStart(2, '0') + ':00';
+            const te = (hour + 1).toString().padStart(2, '0') + ':00';
+            const bl = S.blocks();
+            const existing = bl.findIndex(b => b.owner === CU.id && b.date === ds && b.start === t && b.end === te);
+            if (existing >= 0) { bl.splice(existing, 1); }
+            else { bl.push({ id: genId(), owner: CU.id, date: ds, start: t, end: te, label: '', created: new Date().toISOString() }); }
+            S.setBlocks(bl); renderCal();
+        }
+        function saveSlotTag(ds, hour, inputEl) {
+            const t = hour.toString().padStart(2, '0') + ':00';
+            const te = (hour + 1).toString().padStart(2, '0') + ':00';
+            const bl = S.blocks();
+            const existing = bl.find(b => b.owner === CU.id && b.date === ds && b.start === t && b.end === te);
+            if (existing) { existing.label = inputEl.value.trim(); S.setBlocks(bl); }
+        }
+        function rDay(el, tl, uid, pub) {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            tl.textContent = `${days[curDate.getDay()]}, ${curDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+            const ds = fmtD(curDate);
+            let h = '<div class="day-grid">';
+            for (let i = 0; i < 24; i++) {
+                const blk = !pub && blksFor(ds, uid).find(b => i >= pTime(b.start) && i < pTime(b.end));
+                const bookedBusy = !blk && isBusy(ds, i, uid);
+                const t24 = i.toString().padStart(2, '0') + ':00';
+                const t = formatTimeAmpm(i);
+                const isNight = (i < 6 || i >= 18);
+                const icon = isNight ? '🌑' : '☀️';
+                const nightCls = isNight ? ' night-time' : '';
+                
+                if (blk && !pub) {
+                    // Owner sees busy slot: click row to toggle back to available, label input below
+                    const lbl = blk.label || '';
+                    h += `<div class="h-row${nightCls}">
+  <div class="h-lbl">${t}</div>
+  <div class="h-slot blocked${nightCls}" style="flex-direction:column;align-items:flex-start;gap:4px;cursor:pointer;" onclick="toggleSlot('${ds}',${i})" title="Click to mark Available">
+    <span style="font-weight:700;">⛔ Busy</span>
+    <input class="slot-tag" value="${lbl}" placeholder="+ add label (e.g. wedding)" onclick="event.stopPropagation()" onchange="saveSlotTag('${ds}',${i},this)" onkeydown="if(event.key==='Enter'){saveSlotTag('${ds}',${i},this);event.preventDefault();}">
+  </div>
+</div>`;
+                } else if (bookedBusy) {
+                    h += `<div class="h-row${nightCls}"><div class="h-lbl">${t}</div><div class="h-slot busy${nightCls}"><span class="sl">⛔ Busy</span></div></div>`;
+                } else {
+                    // Available
+                    if (!pub) {
+                        h += `<div class="h-row${nightCls}"><div class="h-lbl">${t}</div><div class="h-slot${nightCls}" onclick="toggleSlot('${ds}',${i})" style="cursor:pointer;" title="Click to mark Busy"><span class="sl">${icon} Available</span></div></div>`;
+                    } else {
+                        h += `<div class="h-row${nightCls}"><div class="h-lbl">${t}</div><div class="h-slot${nightCls}" onclick="openBook('${ds}','${t24}','${uid}')"><span class="sl">${icon} Available</span><span class="sa">Book</span></div></div>`;
+                    }
+                }
+            }
+            el.innerHTML = h + '</div>';
+        }
+        function rWeek(el, tl, uid, pub) {
+            const sow = new Date(curDate); sow.setDate(curDate.getDate() - curDate.getDay());
+            const eow = new Date(sow); eow.setDate(sow.getDate() + 6);
+            tl.textContent = `${sow.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${eow.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            let h = '<div class="wk-grid"><div></div>';
+            for (let i = 0; i < 7; i++) { const d = new Date(sow); d.setDate(sow.getDate() + i); const td = d.toDateString() === new Date().toDateString(); h += `<div class="wk-hdr" style="${td ? 'color:var(--primary);font-weight:800;' : ''}">${days[i]}<br><small>${d.getDate()}</small></div>`; }
+            for (let i = 0; i < 24; i++) {
+                const t = formatTimeAmpm(i).replace(':00', '');
+                const isNight = (i < 6 || i >= 18);
+                const nightCls = isNight ? ' night-time' : '';
+                h += `<div class="wk-hl${nightCls}">${t}</div>`;
+                for (let j = 0; j < 7; j++) {
+                    const d = new Date(sow); d.setDate(sow.getDate() + j); const ds = fmtD(d);
+                    const busy = isBusy(ds, i, uid), td = d.toDateString() === new Date().toDateString();
+                    let cls = 'wk-c' + nightCls; if (busy) cls += ' busy'; if (td) cls += ' today';
+                    let oc = '', txt = '';
+                    if (!pub) {
+                        // Owner view: toggle Available/Busy like day view
+                        if (busy) {
+                            txt = '⛔'; oc = `onclick="toggleSlot('${ds}',${i})" title="Click to mark Available"`;
+                        } else {
+                            txt = isNight ? '🌑' : '☀️'; oc = `onclick="toggleSlot('${ds}',${i})" title="Click to mark Busy"`;
+                        }
+                    } else {
+                        // Public view: book available slots
+                        if (busy) {
+                            txt = 'Busy';
+                        } else {
+                            txt = '';
+                            oc = `onclick="openBook('${ds}','${i.toString().padStart(2, '0')}:00','${uid}')"`;
+                        }
+                    }
+                    h += `<div class="${cls}" ${oc}>${txt}</div>`;
+                }
+            }
+            el.innerHTML = h + '</div>';
+        }
+        function rMonth(el, tl, uid, pub) {
+            tl.textContent = curDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const fd = new Date(curDate.getFullYear(), curDate.getMonth(), 1), ld = new Date(curDate.getFullYear(), curDate.getMonth() + 1, 0), pad = fd.getDay();
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], today = new Date();
+            let h = '<div class="mo-grid">';
+            days.forEach(d => h += `<div class="mo-hdr">${d}</div>`);
+            for (let i = 0; i < pad; i++) h += '<div class="mo-cell other-m"></div>';
+            for (let d = 1; d <= ld.getDate(); d++) { const dt = new Date(curDate.getFullYear(), curDate.getMonth(), d), ds = fmtD(dt), busy = dayBusy(ds, uid), isT = dt.toDateString() === today.toDateString(); let cls = ''; if (busy) cls += ' busy'; if (isT) cls += ' today'; h += `<div class="mo-cell${cls}" onclick="selDate(${d})"><div class="dn">${d}</div><div class="ds">${busy ? 'Busy' : ''}</div></div>`; }
+            el.innerHTML = h + '</div>';
+        }
+        function selDate(d) { curDate.setDate(d); setView('day'); }
+
+        /* ── IMPORT / EXPORT CALENDAR ── */
+        function importFromGCal() {
+            window.open('https://calendar.google.com/calendar/r', '_blank');
+            toast('📥 Opening Google Calendar — copy your events manually');
+        }
+        function exportToGCal() {
+            // Export all accepted bookings as an event batch — open one by one for today's month
+            const bks = S.bookings().filter(b => b.owner === CU.id && b.status === 'accepted');
+            const blks = S.blocks().filter(b => b.owner === CU.id);
+            const all = [...bks.map(b => ({ date: b.date, start: b.start, end: b.end, label: `Appt – ${b.bookerName}` })), ...blks.map(b => ({ date: b.date, start: b.start, end: b.end, label: b.label || 'Busy' }))];
+            if (!all.length) { toast('No events to export'); return; }
+            all.forEach((e, i) => setTimeout(() => {
+                const sf = (e.date + 'T' + e.start + ':00').replace(/[-:]/g, ''), ef = (e.date + 'T' + e.end + ':00').replace(/[-:]/g, '');
+                window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.label)}&dates=${sf}/${ef}`, '_blank');
+            }, i * 800));
+            toast(`📤 Exporting ${all.length} event(s)…`);
+        }
+
+        /* ── BOOK MODAL (universal) ── */
+        let bookTargetUid = null;
+        function openBook(date, start, targetUid) {
+            bookTargetUid = targetUid || (VU ? VU.id : null);
+            $('bkDate').value = date; $('bkStart').value = start;
+            const [h, m] = start.split(':'); $('bkEnd').value = `${(+h + 1).toString().padStart(2, '0')}:${m}`;
+            // Pre-fill booker info if logged in
+            if (CU) { $('bkName').value = CU.name; $('bkPhone').value = CU.phone.replace(/^\+\d+/, ''); } else { $('bkName').value = ''; $('bkPhone').value = ''; }
+            $('bkNote').value = '';
+            $('bkModal').classList.remove('hidden');
+        }
+        function submitBook() {
+            const name = $('bkName').value.trim(), num = numVal('bkPhone'), phone = ccVal('bkCC') + num;
+            const dt = $('bkDate').value, st = $('bkStart').value, en = $('bkEnd').value, note = $('bkNote').value.trim();
+            const targetUid = bookTargetUid || (VU ? VU.id : (CU ? CU.id : null));
+            if (!name || !num || !dt || !st || !en) { toast('❌ Fill all fields'); return; } if (st >= en) { toast('❌ End after start'); return; } if (!targetUid) { toast('❌ Error'); return; }
+            const conflict = S.bookings().some(b => b.status === 'accepted' && b.owner === targetUid && b.date === dt && st < b.end && en > b.start) || S.blocks().some(b => b.owner === targetUid && b.date === dt && st < b.end && en > b.start);
+            if (conflict) { toast('⛔ Slot is busy'); return; }
+            const bk = S.bookings(); bk.push({ id: genId(), owner: targetUid, bookerName: name, bookerPhone: phone, date: dt, start: st, end: en, note, status: 'accepted', created: new Date().toISOString() }); S.setBookings(bk);
+            cModal('bkModal'); toast('📨 Booking request sent!'); renderCal();
+        }
+
+        /* ── BOOKINGS ── */
+        function badge(st) { const m = { accepted: ['#dcfce7', '#166534', '✅ Accepted'], rejected: ['#fee2e2', '#991b1b', '❌ Rejected'] }; const [bg, c, l] = m[st] || m.accepted; return `<span class="sbadge" style="background:${bg};color:${c};">${l}</span>`; }
+        function loadBk() {
+            const all = S.bookings(), us = S.users();
+            const inc = all.filter(b => b.owner === CU.id).sort((a, b) => new Date(b.created) - new Date(a.created));
+            const out = all.filter(b => b.bookerPhone === CU.phone).sort((a, b) => new Date(b.created) - new Date(a.created));
+            const inEl = $('inBk'), outEl = $('outBk');
+            if (!inc.length) inEl.innerHTML = '<div class="empty"><span class="em">📭</span>No incoming requests yet<br><small style="margin-top:7px;display:block;">Share your calendar to get bookings!</small></div>';
+            else inEl.innerHTML = inc.map(b => {
+                const calB = b.status === 'accepted' ? `<button class="bs bs-cal" onclick="bkToCal('${b.id}')">📅</button>` : '';
+                const ar = '';
+                return `<div class="bk-item"><div class="bk-info"><div class="bk-name">👤 ${b.bookerName} <span style="font-weight:400;color:var(--text-light);font-size:11px;">${b.bookerPhone}</span></div><div class="bk-meta">📅 ${b.date} 🕐 ${b.start}–${b.end}${b.note ? ' 📝 ' + b.note : ''}</div>${badge(b.status)}</div><div class="bk-acts">${ar}${calB}</div></div>`;
+            }).join('');
+            if (!out.length) outEl.innerHTML = '<div class="empty"><span class="em">📭</span>No outgoing requests yet</div>';
+            else outEl.innerHTML = out.map(b => {
+                const calB = b.status === 'accepted' ? `<button class="bs bs-cal" onclick="bkToCal('${b.id}')">📅</button>` : '';
+                return `<div class="bk-item"><div class="bk-info"><div class="bk-name">📅 With: ${us[b.owner]?.name || 'User'}</div><div class="bk-meta">📅 ${b.date} 🕐 ${b.start}–${b.end}</div>${badge(b.status)}</div><div class="bk-acts">${calB}</div></div>`;
+            }).join('');
+        }
+        function respond(id, st) { let bk = S.bookings(); const b = bk.find(x => x.id === id); if (b) { b.status = st; b.respondedAt = new Date().toISOString(); S.setBookings(bk); } toast(st === 'accepted' ? '✅ Accepted' : '❌ Rejected'); loadBk(); }
+        function bkToCal(id) { const b = S.bookings().find(x => x.id === id); if (!b) return; const t = encodeURIComponent(`Appt – ${b.bookerName}`), sf = (b.date + 'T' + b.start + ':00').replace(/[-:]/g, ''), ef = (b.date + 'T' + b.end + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(b.note || 'Dayvo')}`, '_blank'); toast('📅 Opening Calendar…'); }
+
+        /* ── SINGLE INVITE ── */
+        function invMsg(dt, st, en, note) { 
+            const [h, m] = st.split(':');
+            const t = formatTimeAmpm(parseInt(h));
+            const title = encodeURIComponent(`Meeting with ${CU.name}`);
+            const sf = (dt + 'T' + st + ':00').replace(/[-:]/g, '');
+            const ef = (dt + 'T' + en + ':00').replace(/[-:]/g, '');
+            const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(note || '')}`;
+            
+            return `يا هلا\n\nاجتماعنا الساعة ${t}\nتاريخ ${dt}\n\nرتب مواعيدك عبر:\n${calUrl}`;
+        }
+        function openSingle() { $('siDate').value = fmtD(new Date()); $('siPhone').value = ''; $('siNote').value = ''; $('siModal').classList.remove('hidden'); }
+        function sendSingle() {
+            const cc = $('siCC').value, num = numVal('siPhone'), dt = $('siDate').value, st = $('siStart').value, en = $('siEnd').value, note = $('siNote').value.trim();
+            if (!num || !dt || !st || !en) { toast('❌ Fill all fields'); return; } if (st >= en) { toast('❌ End after start'); return; }
+            window.open(`https://wa.me/${cc + num}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank'); toast('📨 Opening WhatsApp…');
+        }
+        function addSingleCal() { const dt = $('siDate').value, st = $('siStart').value, en = $('siEnd').value, note = $('siNote').value.trim(); if (!dt || !st || !en) { toast('❌ Fill date/time'); return; } const t = encodeURIComponent(`Meeting – ${CU.name}`), sf = (dt + 'T' + st + ':00').replace(/[-:]/g, ''), ef = (dt + 'T' + en + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(note || 'Dayvo')}`, '_blank'); toast('📅 Opening Calendar…'); }
+
+        /* ── GROUP INVITE ── */
+        function openGroup() { GC = []; $('grDate').value = fmtD(new Date()); $('grPhone').value = ''; $('grNote').value = ''; $('grProgress').classList.add('hidden'); renderGC(); $('grModal').classList.remove('hidden'); }
+        function addGC() { const cc = $('grCC').value, num = numVal('grPhone'); if (!num) { toast('❌ Enter a number'); return; } const ph = cc + num; if (GC.find(c => c.ph === ph)) { toast('⚠️ Already added'); return; } GC.push({ ph, disp: '+' + ph, sent: false }); $('grPhone').value = ''; renderGC(); }
+        function removeGC(ph) { GC = GC.filter(c => c.ph !== ph); renderGC(); updProg(); }
+        function renderGC() {
+            const el = $('grList');
+            if (!GC.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-light);font-size:13px;padding:12px;">No contacts yet — add numbers above</div>'; updProg(); return; }
+            el.innerHTML = GC.map(c => `<div class="gc-row">
+        <div class="gc-av">📱</div>
+        <div class="gc-info"><div class="gc-ph">${c.disp}</div></div>
+        <button class="gc-send ${c.sent ? 'done' : 'unsent'}" onclick="sendOne('${c.ph}')" ${c.sent ? 'disabled' : ''}>
+            ${c.sent ? '✅ Sent!' : '▶ Send'}
+        </button>
+        ${!c.sent ? `<button class="gc-del" onclick="removeGC('${c.ph}')">✕</button>` : ''}
+    </div>`).join('');
+            updProg();
+        }
+        function updProg() {
+            const tot = GC.length, sent = GC.filter(c => c.sent).length, prog = $('grProgress');
+            if (!tot) { prog.classList.add('hidden'); return; }
+            prog.classList.remove('hidden');
+            $('grFill').style.width = `${(sent / tot) * 100}%`;
+            $('grLbl').textContent = `${sent} of ${tot} sent`;
+        }
+        function sendOne(ph) {
+            const dt = $('grDate').value, st = $('grStart').value, en = $('grEnd').value, note = $('grNote').value.trim();
+            if (!dt || !st || !en) { toast('❌ Fill date/time first'); return; } if (st >= en) { toast('❌ End after start'); return; }
+            window.open(`https://wa.me/${ph}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank');
+            const c = GC.find(x => x.ph === ph); if (c) c.sent = true; renderGC();
+        }
+        function sendAllGC() {
+            if (!GC.length) { toast('❌ Add contacts first'); return; }
+            const dt = $('grDate').value, st = $('grStart').value, en = $('grEnd').value, note = $('grNote').value.trim();
+            if (!dt || !st || !en) { toast('❌ Fill date/time first'); return; } if (st >= en) { toast('❌ End after start'); return; }
+            const unsent = GC.filter(c => !c.sent);
+            if (!unsent.length) { toast('✅ All already sent!'); return; }
+            unsent.forEach((c, i) => setTimeout(() => { window.open(`https://wa.me/${c.ph}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank'); c.sent = true; renderGC(); }, i * 700));
+            toast(`📨 Sending to ${unsent.length}…`);
+        }
+
+        /* ── ENTER APP / PUBLIC ── */
+        function updateNav() {
+            if(!CU) return;
+            $('navName').textContent = CU.name;
+            $('pdName').textContent = CU.name; 
+            $('pdPhone').textContent = CU.phone;
+            const nAv = $('navAv');
+            if(CU.avatar) nAv.innerHTML = `<img src="${CU.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
+            else nAv.textContent = CU.name.charAt(0).toUpperCase();
+        }
+        function enterApp() { $('loginScreen').classList.add('hidden'); $('mainApp').classList.remove('hidden'); updateNav(); showTab('calendar'); }
+        function enterPublic(user) {
+            VU = user;
+            const saved = S.cur();
+            if (saved && saved.id && saved.id !== user.id) { const su = S.users()[saved.id]; if (su) { CU = su; addFriend(user); } }
+            $('loginScreen').classList.add('hidden'); $('publicView').classList.remove('hidden');
+            $('pubName').textContent = user.name;
+            const av = $('pubAv'); av.innerHTML = user.avatar ? `<img src="${user.avatar}">` : `${user.name.charAt(0).toUpperCase()}`;
+            renderCal();
+        }
+
+        /* ── PWA INSTALL ── */
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const ib = $('installBar');
+            if (ib) ib.style.display = 'flex';
+        });
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(r => {
+                    if (r.outcome === 'accepted') { toast('✅ App installed!'); $('installBar').style.display = 'none'; }
+                    else toast('ℹ️ Install cancelled');
+                    deferredPrompt = null;
+                });
+            } else {
+                // iOS / browsers that don't support beforeinstallprompt
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                if (isIOS) toast('📲 Tap the Share button ↗ then "Add to Home Screen"');
+                else toast('📲 Use your browser menu → "Add to Home Screen" or "Install App"');
+            }
+        }
+        // Always show install button on mobile (even without beforeinstallprompt)
+        if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            const ib = $('installBar');
+            if (ib) ib.style.display = 'flex';
+        }
+
+        /* ── INIT ── */
+        function init() {
+            const p = new URLSearchParams(window.location.search), uid = p.get('user');
+            if (uid) {
+                const us = S.users(), user = us[uid];
+                if (user) { const saved = S.cur(); if (saved && saved.id === uid) { CU = us[uid]; enterApp(); } else { enterPublic(user); } }
+                else toast('❌ User not found');
+            } else {
+                const saved = S.cur(); if (saved && saved.id) { const us = S.users(); if (us[saved.id]) { CU = us[saved.id]; enterApp(); } }
+            }
+        }
+        init();
+    </script>
+</body>
+
+</html>
