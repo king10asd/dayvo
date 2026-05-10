@@ -16,6 +16,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -1470,13 +1471,6 @@
                 </svg>
                 Continue with Google
             </button>
-            <button class="oauth-btn" onclick="oAuth('apple')">
-                <svg viewBox="0 0 24 24">
-                    <path
-                        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.98 1.08-3.11-1.05.05-2.31.7-3.06 1.55-.67.76-1.26 1.98-1.1 3.13 1.17.09 2.36-.68 3.08-1.57z" />
-                </svg>
-                Continue with Apple
-            </button>
             <div class="divider"><span>or</span></div>
             <input type="text" id="guestName" placeholder="Your Name">
             <div class="ph">
@@ -1789,8 +1783,7 @@
             return `${h}:00 ${ampm}`;
         }
 
-        /* ── AUTH ── */
-        // ⚠️ Replace with YOUR Firebase config from https://console.firebase.google.com
+        /* ── AUTH & DATA ── */
         const firebaseConfig = {
             apiKey: "AIzaSyBHyVe-MuG8Ryi0uN61przLAoqHmwdkcTE",
             authDomain: "scheduleit-fb644.firebaseapp.com",
@@ -1801,32 +1794,93 @@
             measurementId: "G-L58H3JLC2E"
         };
         let firebaseReady = false;
+        let db = null;
         try {
-            if (typeof firebase !== 'undefined') { firebase.initializeApp(firebaseConfig); firebaseReady = firebaseConfig.apiKey !== 'YOUR_API_KEY'; }
+            if (typeof firebase !== 'undefined') { 
+                firebase.initializeApp(firebaseConfig); 
+                firebaseReady = firebaseConfig.apiKey !== 'YOUR_API_KEY'; 
+                if(firebaseReady) db = firebase.firestore();
+            }
         } catch (e) { console.warn('Firebase init skipped:', e.message); }
+
+        function pushUser(u) {
+            let us = S.users(); us[u.id] = u; S.setUsers(us);
+            if(db) db.collection('users').doc(u.id).set(u).catch(e=>console.error(e));
+        }
+        function pushBooking(bk) {
+            let bks = S.bookings(); 
+            const ex = bks.findIndex(b=>b.id===bk.id); 
+            if(ex>=0) bks[ex]=bk; else bks.push(bk); 
+            S.setBookings(bks);
+            if(db) db.collection('bookings').doc(bk.id).set(bk).catch(e=>console.error(e));
+        }
+        function pushBlock(bk) {
+            let bks = S.blocks();
+            const ex = bks.findIndex(b => b.id === bk.id);
+            if(ex >= 0) bks[ex] = bk; else bks.push(bk);
+            S.setBlocks(bks);
+            if(db) db.collection('blocks').doc(bk.id).set(bk).catch(e=>console.error(e));
+        }
+        function deleteBlock(id) {
+            let bks = S.blocks().filter(b => b.id !== id); S.setBlocks(bks);
+            if(db) db.collection('blocks').doc(id).delete().catch(e=>console.error(e));
+        }
+
+        async function syncMyData() {
+            if(!CU || !db) return;
+            try {
+                const bSnap = await db.collection('bookings').where('owner', '==', CU.id).get();
+                const blSnap = await db.collection('blocks').where('owner', '==', CU.id).get();
+                const outSnap = await db.collection('bookings').where('bookerPhone', '==', CU.phone).get();
+                
+                let allBksMap = {};
+                S.bookings().forEach(b => allBksMap[b.id] = b);
+                bSnap.forEach(d => allBksMap[d.id] = d.data());
+                outSnap.forEach(d => allBksMap[d.id] = d.data());
+                S.setBookings(Object.values(allBksMap));
+                
+                let allBlksMap = {};
+                S.blocks().forEach(b => allBlksMap[b.id] = b);
+                blSnap.forEach(d => allBlksMap[d.id] = d.data());
+                S.setBlocks(Object.values(allBlksMap));
+                
+                if(curView) renderCal();
+                if($('bookingsTab') && !$('bookingsTab').classList.contains('hidden')) loadBk();
+            } catch(e) { console.error('Sync error', e); }
+        }
 
         async function oAuth(provider) {
             if (!firebaseReady) {
-                // Fallback: use guest login when Firebase is not configured
                 toast('⚠️ OAuth not configured — using guest login');
                 guestLogin();
                 return;
             }
             try {
-                let authProvider;
-                if (provider === 'google') authProvider = new firebase.auth.GoogleAuthProvider();
-                else if (provider === 'apple') authProvider = new firebase.auth.OAuthProvider('apple.com');
-                else { guestLogin(); return; }
+                let authProvider = new firebase.auth.GoogleAuthProvider();
                 const result = await firebase.auth().signInWithPopup(authProvider);
                 const u = result.user;
                 const name = u.displayName || 'User';
                 const phone = u.phoneNumber || u.email || u.uid;
                 const avatar = u.photoURL || null;
-                // Store user with Firebase UID
-                let us = S.users(), uid = Object.entries(us).find(([, x]) => x.firebaseUid === u.uid)?.[0];
-                if (!uid) { uid = genId(); us[uid] = { id: uid, name, phone, provider, avatar, firebaseUid: u.uid, email: u.email, created: new Date().toISOString() }; S.setUsers(us); }
-                else { us[uid].name = name; if (avatar) us[uid].avatar = avatar; S.setUsers(us); }
-                CU = us[uid]; S.setCur(CU); enterApp();
+                const uid = u.uid; // Firebase UID
+                
+                let us = S.users();
+                let userData = us[uid];
+                if (db) {
+                    try {
+                        const doc = await db.collection('users').doc(uid).get();
+                        if (doc.exists) userData = doc.data();
+                    } catch(e){}
+                }
+                if (!userData) { userData = { id: uid, name, phone, provider, avatar, email: u.email, firebaseUid: uid, created: new Date().toISOString() }; }
+                userData.name = name;
+                if(avatar) userData.avatar = avatar;
+                
+                pushUser(userData);
+                CU = userData; S.setCur(CU);
+                
+                await syncMyData();
+                enterApp();
                 toast('✅ Signed in as ' + name);
             } catch (e) {
                 console.error('Auth error:', e);
@@ -1834,12 +1888,17 @@
                 else toast('❌ Sign-in failed: ' + (e.message || 'Unknown error'));
             }
         }
-        function guestLogin() { const n = $('guestName').value.trim(), num = numVal('guestPhone'); if (!n || !num) { toast('❌ Enter name and phone'); return; } doLogin(n, ccVal('lCC') + num, 'guest'); }
+        function guestLogin() { 
+            if(!confirm("Data is saved temporarily on this device.\n\nLogin with Google to save your data permanently to your account.\n\nContinue as guest?")) return;
+            const n = $('guestName').value.trim(), num = numVal('guestPhone'); 
+            if (!n || !num) { toast('❌ Enter name and phone'); return; } 
+            doLogin(n, ccVal('lCC') + num, 'guest'); 
+        }
         function doLogin(name, phone, provider) {
             let us = S.users(), uid = Object.entries(us).find(([, u]) => u.phone === phone)?.[0];
-            if (!uid) { uid = genId(); us[uid] = { id: uid, name, phone, provider, avatar: null, created: new Date().toISOString() }; S.setUsers(us); }
-            else { us[uid].name = name; S.setUsers(us); }
-            CU = us[uid]; S.setCur(CU); enterApp();
+            if (!uid) { uid = genId(); const nu = { id: uid, name, phone, provider, avatar: null, created: new Date().toISOString() }; pushUser(nu); CU = nu; }
+            else { CU = us[uid]; CU.name = name; pushUser(CU); }
+            S.setCur(CU); enterApp();
         }
         function logout() { CU = null; S.setCur(null); location.href = getUrl(); }
         function toggleProfileMenu(e) { e.stopPropagation(); const dd = $('profileDropdown'); dd.classList.toggle('open'); }
@@ -1848,7 +1907,7 @@
         /* ── AVATAR ── */
         function updateAv(inp) {
             const f = inp.files[0]; if (!f) return;
-            const r = new FileReader(); r.onload = e => { let us = S.users(); us[CU.id].avatar = e.target.result; S.setUsers(us); CU = us[CU.id]; renderProfile(); toast('✅ Photo updated'); }; r.readAsDataURL(f);
+            const r = new FileReader(); r.onload = e => { CU.avatar = e.target.result; pushUser(CU); renderProfile(); updateNav(); toast('✅ Photo updated'); }; r.readAsDataURL(f);
         }
 
         /* ── FRIENDS ── */
@@ -1936,18 +1995,16 @@
         function toggleSlot(ds, hour) {
             const t = hour.toString().padStart(2, '0') + ':00';
             const te = (hour + 1).toString().padStart(2, '0') + ':00';
-            const bl = S.blocks();
-            const existing = bl.findIndex(b => b.owner === CU.id && b.date === ds && b.start === t && b.end === te);
-            if (existing >= 0) { bl.splice(existing, 1); }
-            else { bl.push({ id: genId(), owner: CU.id, date: ds, start: t, end: te, label: '', created: new Date().toISOString() }); }
-            S.setBlocks(bl); renderCal();
+            const existing = S.blocks().find(b => b.owner === CU.id && b.date === ds && b.start === t && b.end === te);
+            if (existing) { deleteBlock(existing.id); }
+            else { pushBlock({ id: genId(), owner: CU.id, date: ds, start: t, end: te, label: '', created: new Date().toISOString() }); }
+            renderCal();
         }
         function saveSlotTag(ds, hour, inputEl) {
             const t = hour.toString().padStart(2, '0') + ':00';
             const te = (hour + 1).toString().padStart(2, '0') + ':00';
-            const bl = S.blocks();
-            const existing = bl.find(b => b.owner === CU.id && b.date === ds && b.start === t && b.end === te);
-            if (existing) { existing.label = inputEl.value.trim(); S.setBlocks(bl); }
+            const existing = S.blocks().find(b => b.owner === CU.id && b.date === ds && b.start === t && b.end === te);
+            if (existing) { existing.label = inputEl.value.trim(); pushBlock(existing); }
         }
         function rDay(el, tl, uid, pub) {
             const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -2072,7 +2129,8 @@
             if (!name || !num || !dt || !st || !en) { toast('❌ Fill all fields'); return; } if (st >= en) { toast('❌ End after start'); return; } if (!targetUid) { toast('❌ Error'); return; }
             const conflict = S.bookings().some(b => b.status === 'accepted' && b.owner === targetUid && b.date === dt && st < b.end && en > b.start) || S.blocks().some(b => b.owner === targetUid && b.date === dt && st < b.end && en > b.start);
             if (conflict) { toast('⛔ Slot is busy'); return; }
-            const bk = S.bookings(); bk.push({ id: genId(), owner: targetUid, bookerName: name, bookerPhone: phone, date: dt, start: st, end: en, note, status: 'accepted', created: new Date().toISOString() }); S.setBookings(bk);
+            const bk = { id: genId(), owner: targetUid, bookerName: name, bookerPhone: phone, date: dt, start: st, end: en, note, status: 'accepted', created: new Date().toISOString() };
+            pushBooking(bk);
             cModal('bkModal'); toast('📨 Booking request sent!'); renderCal();
         }
 
@@ -2095,19 +2153,55 @@
                 return `<div class="bk-item"><div class="bk-info"><div class="bk-name">📅 With: ${us[b.owner]?.name || 'User'}</div><div class="bk-meta">📅 ${b.date} 🕐 ${b.start}–${b.end}</div>${badge(b.status)}</div><div class="bk-acts">${calB}</div></div>`;
             }).join('');
         }
-        function respond(id, st) { let bk = S.bookings(); const b = bk.find(x => x.id === id); if (b) { b.status = st; b.respondedAt = new Date().toISOString(); S.setBookings(bk); } toast(st === 'accepted' ? '✅ Accepted' : '❌ Rejected'); loadBk(); }
+        function respond(id, st) { let bk = S.bookings(); const b = bk.find(x => x.id === id); if (b) { b.status = st; b.respondedAt = new Date().toISOString(); pushBooking(b); } toast(st === 'accepted' ? '✅ Accepted' : '❌ Rejected'); loadBk(); }
         function bkToCal(id) { const b = S.bookings().find(x => x.id === id); if (!b) return; const t = encodeURIComponent(`Appt – ${b.bookerName}`), sf = (b.date + 'T' + b.start + ':00').replace(/[-:]/g, ''), ef = (b.date + 'T' + b.end + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(b.note || 'Dayvo')}`, '_blank'); toast('📅 Opening Calendar…'); }
 
         /* ── SINGLE INVITE ── */
+        function handleEventUrl(p) {
+            const title = p.get('title') || 'Meeting';
+            const dt = p.get('dt'), st = p.get('st'), en = p.get('en'), note = p.get('note') || '';
+            if(!dt || !st) return; 
+
+            const sf = (dt + 'T' + st + ':00').replace(/[-:]/g, '');
+            const ef = (dt + 'T' + en + ':00').replace(/[-:]/g, '');
+            const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${sf}/${ef}&details=${encodeURIComponent(note)}`;
+            const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${title}\nDTSTART:${sf}\nDTEND:${ef}\nDESCRIPTION:${note}\nEND:VEVENT\nEND:VCALENDAR`;
+            const icsUrl = `data:text/calendar;charset=utf8,${encodeURIComponent(icsContent)}`;
+
+            let inviter = "a friend";
+            if(title.startsWith('Meeting with ')) inviter = title.replace('Meeting with ', '');
+
+            document.body.innerHTML = `
+            <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);padding:20px;font-family:sans-serif;">
+                <div style="background:white;padding:40px 30px;border-radius:24px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:400px;width:100%;">
+                    <div style="font-size:50px;margin-bottom:15px;">📅</div>
+                    <h2 style="margin:0 0 15px;font-size:20px;color:#1e293b;line-height:1.4;">You received an invitation from <strong>${inviter}</strong> on ${dt} at ${formatTimeAmpm(parseInt(st.split(':')[0]))}.<br><br>Shall I add this to your Calendar?</h2>
+                    
+                    <div style="display:flex;gap:10px;margin-top:25px;">
+                        <button onclick="document.getElementById('calOpts').style.display='block';this.style.display='none';document.getElementById('noBtn').style.display='none'" style="flex:1;background:#22c55e;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">Yes</button>
+                        <button id="noBtn" onclick="window.location.href='https://king10asd.github.io/dayvo/'" style="flex:1;background:#ef4444;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">No</button>
+                    </div>
+                    
+                    <div id="calOpts" style="display:none;margin-top:15px;">
+                        <p style="margin-bottom:10px;font-size:14px;color:#64748b;">Choose your calendar:</p>
+                        <a href="${gcal}" target="_blank" style="display:block;background:#4285F4;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;transition:0.2s;">Google Calendar</a>
+                        <a href="${icsUrl}" download="meeting.ics" style="display:block;background:#1e293b;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;transition:0.2s;">Apple / Outlook</a>
+                        <a href="https://king10asd.github.io/dayvo/" style="display:block;margin-top:20px;color:#6366f1;font-weight:bold;text-decoration:none;font-size:14px;">Try Dayvo!</a>
+                    </div>
+                </div>
+            </div>`;
+        }
+
         function invMsg(dt, st, en, note) { 
             const [h, m] = st.split(':');
             const t = formatTimeAmpm(parseInt(h));
             const title = encodeURIComponent(`Meeting with ${CU.name}`);
             const sf = (dt + 'T' + st + ':00').replace(/[-:]/g, '');
             const ef = (dt + 'T' + en + ':00').replace(/[-:]/g, '');
-            const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(note || '')}`;
+            const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(note || '')}`;
+            const calUrl = shareUrl(CU.id) + `&event=1&title=${title}&dt=${dt}&st=${st}&en=${en}&note=${encodeURIComponent(note || '')}`;
             
-            return `يا هلا\n\nاجتماعنا الساعة ${t}\nتاريخ ${dt}\n\nرتب مواعيدك عبر:\n${calUrl}`;
+            return `يا هلا اجتماعنا الساعة ${t} تاريخ ${dt} رتب موعدك عبر: ${gcal}\n\nأو\n\n${calUrl}\n\nTry Dayvo!\nhttps://king10asd.github.io/dayvo/`;
         }
         function openSingle() { $('siDate').value = fmtD(new Date()); $('siPhone').value = ''; $('siNote').value = ''; $('siModal').classList.remove('hidden'); }
         function sendSingle() {
@@ -2208,14 +2302,44 @@
         }
 
         /* ── INIT ── */
-        function init() {
-            const p = new URLSearchParams(window.location.search), uid = p.get('user');
+        async function init() {
+            const p = new URLSearchParams(window.location.search), uid = p.get('user'), event = p.get('event');
+            if (event) { handleEventUrl(p); return; }
+            
             if (uid) {
-                const us = S.users(), user = us[uid];
-                if (user) { const saved = S.cur(); if (saved && saved.id === uid) { CU = us[uid]; enterApp(); } else { enterPublic(user); } }
+                let user = S.users()[uid];
+                if (!user && db) {
+                    try {
+                        const doc = await db.collection('users').doc(uid).get();
+                        if (doc.exists) { user = doc.data(); let us = S.users(); us[uid] = user; S.setUsers(us); }
+                    } catch(e){}
+                }
+                if (user) { 
+                    if(db) {
+                        try {
+                            const bSnap = await db.collection('bookings').where('owner', '==', uid).get();
+                            const blSnap = await db.collection('blocks').where('owner', '==', uid).get();
+                            let allBksMap = {}; S.bookings().forEach(b => allBksMap[b.id] = b);
+                            bSnap.forEach(d => allBksMap[d.id] = d.data());
+                            S.setBookings(Object.values(allBksMap));
+                            
+                            let allBlksMap = {}; S.blocks().forEach(b => allBlksMap[b.id] = b);
+                            blSnap.forEach(d => allBlksMap[d.id] = d.data());
+                            S.setBlocks(Object.values(allBlksMap));
+                        } catch(e){}
+                    }
+                    const saved = S.cur(); 
+                    if (saved && saved.id === uid) { CU = user; enterApp(); syncMyData(); } else { enterPublic(user); } 
+                }
                 else toast('❌ User not found');
             } else {
-                const saved = S.cur(); if (saved && saved.id) { const us = S.users(); if (us[saved.id]) { CU = us[saved.id]; enterApp(); } }
+                const saved = S.cur(); 
+                if (saved && saved.id) { 
+                    const us = S.users(); 
+                    if (us[saved.id]) { 
+                        CU = us[saved.id]; enterApp(); syncMyData(); 
+                    } 
+                }
             }
         }
         init();
