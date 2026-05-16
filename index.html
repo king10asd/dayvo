@@ -1551,6 +1551,11 @@
                     </div>
                     <!-- Add Friend Box -->
                     <div id="addFriendBox" class="hidden" style="background:#f8fafc;border-radius:14px;border:2px dashed var(--border);padding:14px;margin-bottom:12px;">
+                        <div style="background:white;border-left:4px solid var(--primary);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--text-light);">
+                            <strong style="color:var(--primary);">How to add friends:</strong><br>
+                            1. <strong>By Phone:</strong> Enter their number below to search and add them<br>
+                            2. <strong>By QR Code:</strong> Share your QR code below, they scan it and you're automatically added as friends
+                        </div>
                         <div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">Add by phone number:</div>
                         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
                             <div class="ph" style="margin:0;flex:1;min-width:180px;"><select id="afCC" style="margin:0;width:90px;padding:10px 4px;font-size:11px;">
@@ -1577,7 +1582,13 @@
                 <!-- SHARE / QR -->
                 <div class="share-box">
                     <h4>🔗 Share Your Calendar</h4>
-                    <p class="sh-sub">Friends who scan this QR are added to your friends list automatically</p>
+                    <p class="sh-sub" style="margin-bottom:14px;">Friends who scan this QR are added to your friends list automatically</p>
+                    <div style="background:white;border-left:4px solid #25D366;padding:10px;border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--text-light);">
+                        <strong style="color:#25D366;">Sharing Methods:</strong><br>
+                        📋 <strong>Copy Link:</strong> Share the link below via any messaging app<br>
+                        🗣️ <strong>WhatsApp:</strong> Click the WhatsApp button to share directly<br>
+                        📄 <strong>QR Code:</strong> Friends scan with their camera, get added automatically
+                    </div>
                     <div id="qrcode"></div>
                     <button class="wa-share-btn" onclick="waShare()">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
@@ -1598,6 +1609,19 @@
 
         <!-- CALENDAR -->
         <div id="calendarTab" class="hidden">
+            <div class="card" style="background:linear-gradient(135deg,#eef2ff,#f3e8ff);border:1px solid var(--primary);margin-bottom:16px;">
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="font-size:28px;flex-shrink:0;">📅</div>
+                    <div>
+                        <strong style="color:var(--primary);font-size:14px;">How Booking Works:</strong>
+                        <div style="font-size:12px;color:var(--text-light);margin-top:6px;line-height:1.5;">
+                            <strong>Your Calendar:</strong> Mark time slots as Available (green) or Busy (red). Friends can book available slots.<br>
+                            <strong>Incoming Requests:</strong> Friends request to book your time. Accept or reject in the Bookings tab.<br>
+                            <strong>Outgoing Requests:</strong> You can invite friends to specific times via WhatsApp or Calendar link.
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="action-row">
                 <button class="action-btn ab-invite" onclick="openSingle()">👤 Invite Friend</button>
                 <button class="action-btn ab-group" onclick="openGroup()">👥 Invite Group</button>
@@ -1824,6 +1848,7 @@
 
         /* ── STATE ── */
         let CU = null, VU = null, curView = 'month', curDate = new Date(), GC = [];
+        let authStateProcessed = false; // Prevent auth loop
 
         /* ── UTILS ── */
         const $ = id => document.getElementById(id);
@@ -1866,7 +1891,8 @@
                 if (firebaseReady) {
                     db = firebase.firestore();
                     firebase.auth().onAuthStateChanged(async (u) => {
-                        if (u) {
+                        if (u && !authStateProcessed) {
+                            authStateProcessed = true; // Prevent re-entry
                             const uid = u.uid;
                             let us = S.users(), userData = us[uid];
                             if (db && !userData) {
@@ -1994,7 +2020,7 @@
             else { CU = us[uid]; CU.name = name; pushUser(CU); }
             S.setCur(CU); enterApp();
         }
-        function logout() { CU = null; S.setCur(null); if (firebaseReady) firebase.auth().signOut(); location.href = getUrl(); }
+        function logout() { CU = null; S.setCur(null); authStateProcessed = false; if (firebaseReady) firebase.auth().signOut(); location.href = getUrl(); }
         function toggleProfileMenu(e) { e.stopPropagation(); const dd = $('profileDropdown'); dd.classList.toggle('open'); }
         document.addEventListener('click', () => { const dd = $('profileDropdown'); if (dd) dd.classList.remove('open'); });
 
@@ -2114,6 +2140,7 @@
         function bksFor(ds, uid, st) { return S.bookings().filter(b => b.owner === uid && b.date === ds && (!st || b.status === st)); }
         function blksFor(ds, uid) { return S.blocks().filter(b => b.owner === uid && b.date === ds); }
         function isBusy(ds, h, uid) { return bksFor(ds, uid, 'accepted').some(b => h >= pTime(b.start) && h < pTime(b.end)) || blksFor(ds, uid).some(b => h >= pTime(b.start) && h < pTime(b.end)); }
+        function isPastTime(ds, hour) { const now = new Date(); const today = fmtD(now); if (ds < today) return true; if (ds === today && hour < now.getHours()) return true; return false; }
         function dayBusy(ds, uid) { return bksFor(ds, uid, 'accepted').length > 0 || blksFor(ds, uid).length > 0; }
 
         /* ── CALENDAR VIEWS ── */
@@ -2152,6 +2179,7 @@
             const ds = fmtD(curDate);
             let h = '<div class="day-grid">';
             for (let i = 0; i < 24; i++) {
+                const isPast = isPastTime(ds, i);
                 const blk = !pub && blksFor(ds, uid).find(b => i >= pTime(b.start) && i < pTime(b.end));
                 const bookedBusy = !blk && isBusy(ds, i, uid);
                 const t24 = i.toString().padStart(2, '0') + ':00';
@@ -2160,7 +2188,10 @@
                 const icon = isNight ? '🌑' : '☀️';
                 const nightCls = isNight ? ' night-time' : '';
 
-                if (blk && !pub) {
+                if (isPast) {
+                    // Past time - show as disabled
+                    h += `<div class="h-row${nightCls}"><div class="h-lbl">${t}</div><div class="h-slot busy${nightCls}" style="opacity:0.6;cursor:not-allowed;"><span class="sl">⏳ Passed</span></div></div>`;
+                } else if (blk && !pub) {
                     // Owner sees busy slot: click row to toggle back to available, label input below
                     const lbl = blk.label || '';
                     h += `<div class="h-row${nightCls}">
@@ -2197,10 +2228,13 @@
                 h += `<div class="wk-hl${nightCls}">${t}</div>`;
                 for (let j = 0; j < 7; j++) {
                     const d = new Date(sow); d.setDate(sow.getDate() + j); const ds = fmtD(d);
+                    const isPast = isPastTime(ds, i);
                     const busy = isBusy(ds, i, uid), td = d.toDateString() === new Date().toDateString();
-                    let cls = 'wk-c' + nightCls; if (busy) cls += ' busy'; if (td) cls += ' today';
+                    let cls = 'wk-c' + nightCls; if (isPast) cls += ' busy'; if (busy && !isPast) cls += ' busy'; if (td) cls += ' today';
                     let oc = '', txt = '';
-                    if (!pub) {
+                    if (isPast) {
+                        txt = '⏳';
+                    } else if (!pub) {
                         // Owner view: toggle Available/Busy like day view
                         if (busy) {
                             txt = '⛔'; oc = `onclick="toggleSlot('${ds}',${i})" title="Click to mark Available"`;
@@ -2543,7 +2577,7 @@
                     const saved = S.cur();
                     if (saved && saved.id === uid) { CU = user; enterApp(); syncMyData(); } else { enterPublic(user); }
                 }
-                else toast('❌ User not found');
+                else { toast('❌ User not found'); const saved = S.cur(); if (saved && saved.id) { const us = S.users(); if (us[saved.id]) { CU = us[saved.id]; enterApp(); syncMyData(); } } }
             } else {
                 const saved = S.cur();
                 if (saved && saved.id) {
