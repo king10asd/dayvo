@@ -1975,8 +1975,10 @@
                 if (firebaseReady) {
                     db = firebase.firestore();
                     firebase.auth().onAuthStateChanged(async (u) => {
+                        // Always hide loading screen immediately when auth state is known
+                        $('loadingScreen').classList.add('hidden');
                         if (u && !authStateProcessed) {
-                            // User is signed in via Google/Firebase — keep loading screen on until done
+                            // User is signed in via Firebase
                             authStateProcessed = true;
                             const uid = u.uid;
                             let us = S.users(), userData = us[uid];
@@ -1990,23 +1992,32 @@
                             pushUser(userData);
                             CU = userData; S.setCur(CU);
                             if (VU && VU.id !== CU.id) { addFriend(VU); VU = null; }
-                            await syncMyData();
-                            enterApp();
-                            toast('✅ Signed in as ' + CU.name);
-                        } else if (!u) {
-                            // Not signed in via Firebase — fall back to localStorage session
-                            $('loadingScreen').classList.add('hidden');
+                            // Only enter app if not already in it
+                            if (!$('mainApp') || $('mainApp').classList.contains('hidden')) {
+                                await syncMyData();
+                                enterApp();
+                                toast('✅ Signed in as ' + CU.name);
+                            } else {
+                                syncMyData();
+                            }
+                        }
+                        // If u is null and no saved session, show login screen
+                        else if (!u && !CU) {
+                            const saved = S.cur();
+                            if (!saved || !saved.id) {
+                                $('loginScreen').classList.remove('hidden');
+                            }
                         }
                     });
                 } else {
-                    // Firebase ready but no auth state yet; init() will handle localStorage fallback
+                    $('loadingScreen').classList.add('hidden');
                 }
             } else {
-                // No firebase at all; init() will handle localStorage fallback
+                $('loadingScreen').classList.add('hidden');
             }
-        } catch (e) { console.warn('Firebase init skipped:', e.message); }
-        // Safety: ensure loading screen is removed after 6s max
-        setTimeout(() => { if ($('loadingScreen') && !$('loadingScreen').classList.contains('hidden')) $('loadingScreen').classList.add('hidden'); }, 6000);
+        } catch (e) { console.warn('Firebase init skipped:', e.message); $('loadingScreen').classList.add('hidden'); }
+        // Safety timeout: hide loading screen after 3s maximum
+        setTimeout(() => { if ($('loadingScreen') && !$('loadingScreen').classList.contains('hidden')) $('loadingScreen').classList.add('hidden'); }, 3000);
 
         function pushUser(u) {
             let us = S.users(); us[u.id] = u; S.setUsers(us);
@@ -2807,7 +2818,6 @@
                     const saved = S.cur();
                     if (saved && saved.id === uid) { CU = user; enterApp(); syncMyData(); }
                     else if (saved && saved.id) {
-                        // Logged-in user visiting someone else's calendar
                         const su = S.users()[saved.id] || saved;
                         CU = su;
                         enterPublic(user);
@@ -2816,23 +2826,16 @@
                     else { enterPublic(user); }
                 }
                 else {
-                    // UID not found — try to restore own session anyway
                     const saved = S.cur();
                     if (saved && saved.id) { CU = saved; pushUser(CU); enterApp(); syncMyData(); }
                     else { $('loadingScreen').classList.add('hidden'); }
                 }
             } else {
-                // No UID in URL — restore session from localStorage
                 const saved = S.cur();
                 if (saved && saved.id) {
                     CU = saved; pushUser(CU); enterApp(); syncMyData();
-                } else {
-                    // No saved session and no Firebase auth yet — wait for onAuthStateChanged
-                    // The 6s timeout will clear the loading screen if nothing resolves
                 }
+                // If no saved session, onAuthStateChanged will handle it (or 3s timeout)
             }
         }
         init();
-    </script>
-</body>
-</html>
