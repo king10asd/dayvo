@@ -13,7 +13,6 @@
     <link rel="apple-touch-icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50'>📅</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -1454,34 +1453,7 @@
 
 <body>
 
-    <!-- LOADING (shown only during active sign-in) -->
-    <div id="loadingScreen" class="login-screen hidden"
-        style="z-index:9999;position:fixed;top:0;left:0;width:100%;height:100%;">
-        <div style="text-align:center;color:white;">
-            <div class="logo-icon" style="animation: pulse 1.5s infinite ease-in-out;">📅</div>
-            <h2 style="margin-top:20px;font-size:22px;">Loading Calgo...</h2>
-            <style>
-                @keyframes pulse {
-                    0% {
-                        transform: scale(0.95);
-                        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
-                    }
-
-                    70% {
-                        transform: scale(1.05);
-                        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
-                    }
-
-                    100% {
-                        transform: scale(0.95);
-                        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-                    }
-                }
-            </style>
-        </div>
-    </div>
-
-    <!-- LOGIN (starts hidden; shown by init() if no session) -->
+    <!-- LOGIN -->
     <div id="loginScreen" class="login-screen">
         <div class="login-card">
             <div class="logo-icon">📅</div>
@@ -1569,39 +1541,33 @@
                     </div>
                     <div class="p-name" id="pName"></div>
                     <div class="p-phone" id="pPhone"></div>
-                    <button onclick="openEditProfile()"
-                        style="margin-top:10px;padding:6px 16px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-weight:600;font-size:12px;cursor:pointer;">✏️
-                        Edit Profile</button>
                 </div>
 
                 <!-- FRIENDS -->
                 <div style="margin-bottom:18px;">
                     <div class="friends-title">👥 My Friends <span id="fCount"
                             style="font-size:12px;color:var(--text-light);font-weight:400;"></span>
-                        <button onclick="$('addFriendBox').classList.toggle('hidden')"
-                            style="margin-left:auto;width:auto;padding:5px 13px;font-size:12px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;cursor:pointer;font-weight:700;">+
-                            Add Friend</button>
+                        <button onclick="$('addFriendBox').classList.toggle('hidden')" style="margin-left:auto;width:auto;padding:5px 13px;font-size:12px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;cursor:pointer;font-weight:700;">+ Add Friend</button>
                     </div>
                     <!-- Add Friend Box -->
-                    <div id="addFriendBox" class="hidden"
-                        style="background:#f8fafc;border-radius:14px;border:2px dashed var(--border);padding:14px;margin-bottom:12px;">
-                        <div
-                            style="background:white;border-left:4px solid var(--primary);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--text-light);">
-                            <strong style="color:var(--primary);">How to add friends:</strong><br>
-                            1. <strong>Share your Calendar link</strong> — when they open it, they're added
-                            automatically<br>
-                            2. <strong>Scan their QR Code</strong> — use the camera button below
+                    <div id="addFriendBox" class="hidden" style="background:#f8fafc;border-radius:14px;border:2px dashed var(--border);padding:14px;margin-bottom:12px;">
+                        <div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">Add by phone number:</div>
+                        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
+                            <div class="ph" style="margin:0;flex:1;min-width:180px;"><select id="afCC" style="margin:0;width:90px;padding:10px 4px;font-size:11px;">
+                                <option value="966">🇸🇦 +966</option>
+                                <option value="971">🇦🇪 +971</option>
+                                <option value="965">🇰🇼 +965</option>
+                                <option value="974">🇶🇦 +974</option>
+                                <option value="973">🇧🇭 +973</option>
+                                <option value="968">🇴🇲 +968</option>
+                                <option value="962">🇯🇴 +962</option>
+                                <option value="20">🇪🇬 +20</option>
+                                <option value="1">🇺🇸 +1</option>
+                                <option value="44">🇬🇧 +44</option>
+                            </select><input type="tel" id="afPhone" placeholder="5xxxxxxxx" style="margin:0;" onkeydown="if(event.key==='Enter')addFriendByPhone()"></div>
+                            <button onclick="addFriendByPhone()" style="width:auto;padding:10px 16px;margin:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;font-size:13px;cursor:pointer;">Find</button>
                         </div>
-                        <div style="text-align:center;">
-                            <button class="btn-p" onclick="startScanner()"
-                                style="width:auto;padding:10px 20px;font-size:14px;">📷 Scan Friend's QR Code</button>
-                        </div>
-                        <div id="qr-reader"
-                            style="width: 100%; max-width: 300px; margin: 10px auto; display:none; border-radius:14px; overflow:hidden;">
-                        </div>
-                        <div style="font-size:11px;color:var(--text-light);margin-top:10px;text-align:center;">Or share
-                            your link below &mdash;
-                            friends who open it are added automatically.</div>
+                        <div style="font-size:11px;color:var(--text-light);margin-top:8px;">Or share your link below — friends who open it are added automatically.</div>
                     </div>
                     <div id="friendsList"></div>
                 </div>
@@ -1611,15 +1577,7 @@
                 <!-- SHARE / QR -->
                 <div class="share-box">
                     <h4>🔗 Share Your Calendar</h4>
-                    <p class="sh-sub" style="margin-bottom:14px;">Friends who scan this QR are added to your friends
-                        list automatically</p>
-                    <div
-                        style="background:white;border-left:4px solid #25D366;padding:10px;border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--text-light);">
-                        <strong style="color:#25D366;">Sharing Methods:</strong><br>
-                        📋 <strong>Copy Link:</strong> Share the link below via any messaging app<br>
-                        🗣️ <strong>WhatsApp:</strong> Click the WhatsApp button to share directly<br>
-                        📄 <strong>QR Code:</strong> Friends scan with their camera, get added automatically
-                    </div>
+                    <p class="sh-sub">Friends who scan this QR are added to your friends list automatically</p>
                     <div id="qrcode"></div>
                     <button class="wa-share-btn" onclick="waShare()">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
@@ -1640,23 +1598,6 @@
 
         <!-- CALENDAR -->
         <div id="calendarTab" class="hidden">
-            <div class="card"
-                style="background:linear-gradient(135deg,#eef2ff,#f3e8ff);border:1px solid var(--primary);margin-bottom:16px;">
-                <div style="display:flex;gap:12px;align-items:flex-start;">
-                    <div style="font-size:28px;flex-shrink:0;">📅</div>
-                    <div>
-                        <strong style="color:var(--primary);font-size:14px;">How Booking Works:</strong>
-                        <div style="font-size:12px;color:var(--text-light);margin-top:6px;line-height:1.5;">
-                            <strong>Your Calendar:</strong> Mark time slots as Available (green) or Busy (red). Friends
-                            can book available slots.<br>
-                            <strong>Incoming Requests:</strong> Friends request to book your time. Accept or reject in
-                            the Bookings tab.<br>
-                            <strong>Outgoing Requests:</strong> You can invite friends to specific times via WhatsApp or
-                            Calendar link.
-                        </div>
-                    </div>
-                </div>
-            </div>
             <div class="action-row">
                 <button class="action-btn ab-invite" onclick="openSingle()">👤 Invite Friend</button>
                 <button class="action-btn ab-group" onclick="openGroup()">👥 Invite Group</button>
@@ -1795,11 +1736,10 @@
             <div class="mr"><label>Message (optional)</label><textarea id="grNote" rows="2" style="margin:0;"
                     placeholder="You're invited!"></textarea></div>
             <div class="sep" style="margin:14px 0;"></div>
-            <div class="mr">
+                <div class="mr">
                 <label>Add Phone Number</label>
                 <div style="display:flex;gap:7px;align-items:center;flex-wrap:nowrap;overflow:hidden;">
-                    <div class="ph" style="margin:0;flex:1;min-width:0;overflow:hidden;"><select id="grCC"
-                            style="margin:0;width:80px;flex-shrink:0;padding:10px 3px;font-size:11px;">
+                    <div class="ph" style="margin:0;flex:1;min-width:0;overflow:hidden;"><select id="grCC" style="margin:0;width:80px;flex-shrink:0;padding:10px 3px;font-size:11px;">
                             <option value="966">🇸🇦 +966</option>
                             <option value="971">🇦🇪 +971</option>
                             <option value="965">🇰🇼 +965</option>
@@ -1838,57 +1778,15 @@
     <div id="expModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('expModal')">
         <div class="modal">
             <h3>📤 Export to Google Calendar</h3>
-            <p style="font-size:13px;color:var(--text-light);text-align:center;margin-bottom:14px;">Select which events
-                to export:</p>
+            <p style="font-size:13px;color:var(--text-light);text-align:center;margin-bottom:14px;">Select which events to export:</p>
             <div style="display:flex;gap:8px;margin-bottom:10px;">
-                <button onclick="expToggleAll(true)"
-                    style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#eef2ff;color:var(--primary);border:none;cursor:pointer;font-weight:700;">Select
-                    All</button>
-                <button onclick="expToggleAll(false)"
-                    style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#f1f5f9;color:var(--text-light);border:none;cursor:pointer;font-weight:700;">Deselect
-                    All</button>
+                <button onclick="expToggleAll(true)" style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#eef2ff;color:var(--primary);border:none;cursor:pointer;font-weight:700;">Select All</button>
+                <button onclick="expToggleAll(false)" style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#f1f5f9;color:var(--text-light);border:none;cursor:pointer;font-weight:700;">Deselect All</button>
             </div>
-            <div id="expList" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;">
-            </div>
+            <div id="expList" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;"></div>
             <div class="m-acts" style="margin-top:16px;">
                 <button class="btn-p" onclick="doExport()" style="flex:2;">📤 Export Selected</button>
                 <button class="btn-x" onclick="cModal('expModal')" style="flex:1;">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: Book Slot -->
-    <div id="bkModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('bkModal')">
-        <div class="modal">
-            <h3>📅 Book an Appointment</h3>
-            <div class="mr"><label>Your Name</label><input type="text" id="bkName" placeholder="John Doe"
-                    style="margin:0;"></div>
-            <div class="mr"><label>Your Phone Number</label>
-                <div class="ph" style="margin:0;"><select id="bkCC">
-                        <option value="966">🇸🇦 +966</option>
-                        <option value="971">🇦🇪 +971</option>
-                        <option value="965">🇰🇼 +965</option>
-                        <option value="974">🇶🇦 +974</option>
-                        <option value="20">🇪🇬 +20</option>
-                        <option value="1">🇺🇸 +1</option>
-                        <option value="44">🇬🇧 +44</option>
-                    </select><input type="tel" id="bkPhone" placeholder="5xxxxxxxx" style="margin:0;"></div>
-            </div>
-            <div class="mr"><label>Date</label><input type="date" id="bkDate" readonly
-                    style="margin:0;background:#f8fafc;color:#64748b;cursor:not-allowed;"></div>
-            <div style="display:flex;gap:9px;">
-                <div class="mr" style="flex:1;"><label>From</label><input type="time" id="bkStart" readonly
-                        style="margin:0;background:#f8fafc;color:#64748b;cursor:not-allowed;"></div>
-                <div class="mr" style="flex:1;"><label>To</label><input type="time" id="bkEnd" readonly
-                        style="margin:0;background:#f8fafc;color:#64748b;cursor:not-allowed;"></div>
-            </div>
-            <div class="mr"><label>Note (optional)</label><textarea id="bkNote" rows="2" style="margin:0;"
-                    placeholder="What is this regarding?"></textarea></div>
-            <div class="m-acts">
-                <button class="btn-p" onclick="submitBook()"
-                    style="flex:1;padding:13px;font-size:14px;border-radius:13px;">Book Slot</button>
-                <button class="btn-x" onclick="cModal('bkModal')"
-                    style="flex:1;padding:13px;font-size:14px;border-radius:13px;">Cancel</button>
             </div>
         </div>
     </div>
@@ -1901,20 +1799,6 @@
             <div id="bkConfirmMsg" style="font-size:15px;line-height:1.6;margin-bottom:20px;"></div>
             <div class="m-acts" style="flex-direction:column;gap:9px;">
                 <button class="btn-p" onclick="cModal('bkConfirmModal')" style="width:100%;">Done</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: Edit Profile -->
-    <div id="epModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('epModal')">
-        <div class="modal">
-            <h3>✏️ Edit Profile</h3>
-            <div class="mr"><label>Your Name</label><input type="text" id="epName" style="margin:0;"></div>
-            <div class="mr"><label>Phone Number (with country code)</label><input type="tel" id="epPhone"
-                    placeholder="+9665xxxxxxxx" style="margin:0;"></div>
-            <div class="m-acts">
-                <button class="btn-p" onclick="saveProfile()" style="flex:1;">Save</button>
-                <button class="btn-x" onclick="cModal('epModal')" style="flex:1;">Cancel</button>
             </div>
         </div>
     </div>
@@ -1940,12 +1824,11 @@
 
         /* ── STATE ── */
         let CU = null, VU = null, curView = 'month', curDate = new Date(), GC = [];
-        let authStateProcessed = false; // Prevent auth loop
 
         /* ── UTILS ── */
         const $ = id => document.getElementById(id);
         function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
-        function fmtD(d) { const y = d.getFullYear(), mo = String(d.getMonth() + 1).padStart(2, '0'), dy = String(d.getDate()).padStart(2, '0'); return `${y}-${mo}-${dy}`; }
+        function fmtD(d) { const y=d.getFullYear(),mo=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0'); return `${y}-${mo}-${dy}`; }
         function pTime(t) { const [h, m] = t.split(':').map(Number); return h + m / 60; }
         function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
         function getUrl() { return window.location.href.split('?')[0].split('#')[0]; }
@@ -1982,7 +1865,6 @@
                 firebaseReady = firebaseConfig.apiKey !== 'YOUR_API_KEY';
                 if (firebaseReady) {
                     db = firebase.firestore();
-                    // Handles silent re-login on page refresh for Google users
                     firebase.auth().onAuthStateChanged(async (u) => {
                         if (u) {
                             const uid = u.uid;
@@ -1997,22 +1879,13 @@
                             pushUser(userData);
                             CU = userData; S.setCur(CU);
                             if (VU && VU.id !== CU.id) { addFriend(VU); renderCal(); }
-                            else if (!$('mainApp') || $('mainApp').classList.contains('hidden')) {
-                                $('loadingScreen').classList.add('hidden');
-                                await syncMyData();
-                                enterApp();
-                            }
+                            else if (!$('loginScreen').classList.contains('hidden')) { await syncMyData(); enterApp(); }
+                            else { await syncMyData(); }
                         }
                     });
-                } else {
-                    $('loadingScreen').classList.add('hidden');
                 }
-            } else {
-                $('loadingScreen').classList.add('hidden');
             }
         } catch (e) { console.warn('Firebase init skipped:', e.message); }
-        // Safety: hide loading screen after 3s no matter what
-        setTimeout(() => { $('loadingScreen').classList.add('hidden'); }, 3000);
 
         function pushUser(u) {
             let us = S.users(); us[u.id] = u; S.setUsers(us);
@@ -2077,14 +1950,13 @@
                 return;
             }
             try {
-                $('loadingScreen').classList.remove('hidden');
                 let authProvider = new firebase.auth.GoogleAuthProvider();
                 const result = await firebase.auth().signInWithPopup(authProvider);
                 const u = result.user;
                 const name = u.displayName || 'User';
                 const phone = u.phoneNumber || u.email || u.uid;
                 const avatar = u.photoURL || null;
-                const uid = u.uid;
+                const uid = u.uid; // Firebase UID
 
                 let us = S.users();
                 let userData = us[uid];
@@ -2105,8 +1977,6 @@
                 enterApp();
                 toast('✅ Signed in as ' + name);
             } catch (e) {
-                $('loadingScreen').classList.add('hidden');
-                $('loginScreen').classList.remove('hidden');
                 console.error('Auth error:', e);
                 if (e.code === 'auth/popup-closed-by-user') toast('⚠️ Sign-in cancelled');
                 else toast('❌ Sign-in failed: ' + (e.message || 'Unknown error'));
@@ -2124,7 +1994,7 @@
             else { CU = us[uid]; CU.name = name; pushUser(CU); }
             S.setCur(CU); enterApp();
         }
-        function logout() { CU = null; S.setCur(null); authStateProcessed = false; if (firebaseReady) firebase.auth().signOut(); location.href = getUrl(); }
+        function logout() { CU = null; S.setCur(null); if (firebaseReady) firebase.auth().signOut(); location.href = getUrl(); }
         function toggleProfileMenu(e) { e.stopPropagation(); const dd = $('profileDropdown'); dd.classList.toggle('open'); }
         document.addEventListener('click', () => { const dd = $('profileDropdown'); if (dd) dd.classList.remove('open'); });
 
@@ -2162,37 +2032,6 @@
             $('addFriendBox').classList.add('hidden');
             toast('✅ ' + found.name + ' added to friends!');
         }
-        let html5QrcodeScanner = null;
-        function startScanner() {
-            $('qr-reader').style.display = 'block';
-            if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 200 });
-                html5QrcodeScanner.render((text) => {
-                    html5QrcodeScanner.clear();
-                    html5QrcodeScanner = null;
-                    $('qr-reader').style.display = 'none';
-                    try {
-                        const url = new URL(text);
-                        const uid = url.searchParams.get('user');
-                        if (uid) { addFriendByUid(uid); } else { toast('❌ Invalid QR code'); }
-                    } catch (e) { toast('❌ Invalid QR code'); }
-                }, (error) => { });
-            }
-        }
-        async function addFriendByUid(uid) {
-            if (uid === CU.id) { toast('⚠️ That\'s your own code!'); return; }
-            let us = S.users();
-            let found = us[uid];
-            if (!found && db) {
-                toast('🔍 Searching…');
-                try {
-                    const snap = await db.collection('users').doc(uid).get();
-                    if (snap.exists) { found = snap.data(); us[found.id] = found; S.setUsers(us); }
-                } catch (e) { }
-            }
-            if (found) { addFriend(found); renderFriends(); toast('✅ ' + found.name + ' added to friends!'); }
-            else { toast('❌ User not found'); }
-        }
         function addFriend(friendUser) {
             if (!CU || CU.id === friendUser.id) return;
             let fr = S.friends(CU.id);
@@ -2213,18 +2052,6 @@
             if (db) db.collection('friends').doc(CU.id).set({ list: fr }).catch(() => { });
             renderFriends(); toast('Removed from friends');
         }
-        function confirmRemoveFriend(fid, fname) {
-            if (confirm(`Remove ${fname} from your friends?`)) removeFriend(fid);
-        }
-        function viewFriendCal(uid) {
-            // Try to open friend's calendar within the app first
-            const friendUser = S.users()[uid];
-            if (friendUser) {
-                enterPublic(friendUser);
-            } else {
-                window.open(shareUrl(uid), '_blank');
-            }
-        }
         function renderFriends() {
             const el = $('friendsList'), fr = getFriends();
             $('fCount').textContent = fr.length ? `(${fr.length})` : '';
@@ -2235,9 +2062,9 @@
             <div class="f-av">${avH(u)}</div>
             <div class="f-name">${u.name}</div>
             <div class="f-btns">
-                <button class="fb fb-v" onclick="viewFriendCal('${u.id}')">&#128197;</button>
-                <button class="fb fb-i" onclick="prefillInvite('${u.id}')">&#128232;</button>
-                <button class="fb fb-r" onclick="confirmRemoveFriend('${u.id}','${u.name.replace(/'/g, '&#39;')}')">&times;</button>
+                <button class="fb fb-v" onclick="window.open('${shareUrl(u.id)}','_blank')">📅</button>
+                <button class="fb fb-i" onclick="prefillInvite('${u.id}')">📨</button>
+                <button class="fb fb-r" onclick="removeFriend('${u.id}')">✕</button>
             </div>
         </div>`).join('')}</div>`;
         }
@@ -2245,9 +2072,9 @@
             const u = S.users()[uid]; if (!u) return;
             openSingle();
             let ph = u.phone.replace(/^\+/, ''); // strip leading +
-            const codes = ['966', '971', '965', '974', '973', '968', '962', '20', '1', '44'];
+            const codes = ['966','971','965','974','973','968','962','20','1','44'];
             // Sort longest first to avoid partial matches (e.g. '1' matching before '966')
-            const sorted = [...codes].sort((a, b) => b.length - a.length);
+            const sorted = [...codes].sort((a,b) => b.length - a.length);
             for (const cc of sorted) {
                 if (ph.startsWith(cc)) {
                     $('siCC').value = cc;
@@ -2273,24 +2100,6 @@
         function copyLink() { const v = $('shareLink').value; navigator.clipboard.writeText(v).then(() => toast('📋 Copied!')).catch(() => { $('shareLink').select(); document.execCommand('copy'); toast('📋 Copied!'); }); }
         function waShare() { const url = shareUrl(CU.id); window.open(`https://wa.me/?text=${encodeURIComponent('📅 Book a slot with me!\n\n' + url)}`, '_blank'); }
 
-        function openEditProfile() {
-            if (!CU) return;
-            $('epName').value = CU.name;
-            $('epPhone').value = CU.phone;
-            $('epModal').classList.remove('hidden');
-        }
-        function saveProfile() {
-            const n = $('epName').value.trim();
-            const p = $('epPhone').value.trim();
-            if (!n || !p) { toast('❌ Fill all fields'); return; }
-            CU.name = n; CU.phone = p;
-            pushUser(CU);
-            S.setCur(CU);
-            renderProfile(); updateNav();
-            cModal('epModal');
-            toast('✅ Profile updated');
-        }
-
         /* ── TABS ── */
         function showTab(t) {
             $('profileDropdown')?.classList.remove('open');
@@ -2305,7 +2114,6 @@
         function bksFor(ds, uid, st) { return S.bookings().filter(b => b.owner === uid && b.date === ds && (!st || b.status === st)); }
         function blksFor(ds, uid) { return S.blocks().filter(b => b.owner === uid && b.date === ds); }
         function isBusy(ds, h, uid) { return bksFor(ds, uid, 'accepted').some(b => h >= pTime(b.start) && h < pTime(b.end)) || blksFor(ds, uid).some(b => h >= pTime(b.start) && h < pTime(b.end)); }
-        function isPastTime(ds, hour) { const now = new Date(); const today = fmtD(now); if (ds < today) return true; if (ds === today && hour < now.getHours()) return true; return false; }
         function dayBusy(ds, uid) { return bksFor(ds, uid, 'accepted').length > 0 || blksFor(ds, uid).length > 0; }
 
         /* ── CALENDAR VIEWS ── */
@@ -2344,7 +2152,6 @@
             const ds = fmtD(curDate);
             let h = '<div class="day-grid">';
             for (let i = 0; i < 24; i++) {
-                const isPast = isPastTime(ds, i);
                 const blk = !pub && blksFor(ds, uid).find(b => i >= pTime(b.start) && i < pTime(b.end));
                 const bookedBusy = !blk && isBusy(ds, i, uid);
                 const t24 = i.toString().padStart(2, '0') + ':00';
@@ -2353,10 +2160,7 @@
                 const icon = isNight ? '🌑' : '☀️';
                 const nightCls = isNight ? ' night-time' : '';
 
-                if (isPast) {
-                    // Past time - show as disabled
-                    h += `<div class="h-row${nightCls}"><div class="h-lbl">${t}</div><div class="h-slot busy${nightCls}" style="opacity:0.6;cursor:not-allowed;"><span class="sl">⏳ Passed</span></div></div>`;
-                } else if (blk && !pub) {
+                if (blk && !pub) {
                     // Owner sees busy slot: click row to toggle back to available, label input below
                     const lbl = blk.label || '';
                     h += `<div class="h-row${nightCls}">
@@ -2393,13 +2197,10 @@
                 h += `<div class="wk-hl${nightCls}">${t}</div>`;
                 for (let j = 0; j < 7; j++) {
                     const d = new Date(sow); d.setDate(sow.getDate() + j); const ds = fmtD(d);
-                    const isPast = isPastTime(ds, i);
                     const busy = isBusy(ds, i, uid), td = d.toDateString() === new Date().toDateString();
-                    let cls = 'wk-c' + nightCls; if (isPast) cls += ' busy'; if (busy && !isPast) cls += ' busy'; if (td) cls += ' today';
+                    let cls = 'wk-c' + nightCls; if (busy) cls += ' busy'; if (td) cls += ' today';
                     let oc = '', txt = '';
-                    if (isPast) {
-                        txt = '⏳';
-                    } else if (!pub) {
+                    if (!pub) {
                         // Owner view: toggle Available/Busy like day view
                         if (busy) {
                             txt = '⛔'; oc = `onclick="toggleSlot('${ds}',${i})" title="Click to mark Available"`;
@@ -2471,25 +2272,18 @@
         /* ── BOOK MODAL (universal) ── */
         let bookTargetUid = null;
         function openBook(date, start, targetUid) {
-            // Ensure we have a logged-in user
-            if (!CU) {
-                // Save pending booking and redirect to login
-                S.s('pending_book', { date, start, targetUid });
-                toast('⚠️ Please log in first to book a slot');
-                $('publicView').classList.add('hidden');
-                $('loginScreen').classList.remove('hidden');
-                return;
-            }
             bookTargetUid = targetUid || (VU ? VU.id : null);
             $('bkDate').value = date; $('bkStart').value = start;
             const [h, m] = start.split(':'); $('bkEnd').value = `${(+h + 1).toString().padStart(2, '0')}:${m}`;
-            $('bkName').value = CU.name;
-            // Strip country code reliably
-            let ph = CU.phone.replace(/^\+/, '');
-            const codes = ['966', '971', '965', '974', '973', '968', '962', '20', '1', '44'].sort((a, b) => b.length - a.length);
-            let localNum = ph;
-            for (const cc of codes) { if (ph.startsWith(cc)) { localNum = ph.slice(cc.length); $('bkCC').value = cc; break; } }
-            $('bkPhone').value = localNum;
+            if (CU) {
+                $('bkName').value = CU.name;
+                // Strip country code reliably — same logic as prefillInvite
+                let ph = CU.phone.replace(/^\+/, '');
+                const codes = ['966','971','965','974','973','968','962','20','1','44'].sort((a,b) => b.length - a.length);
+                let localNum = ph;
+                for (const cc of codes) { if (ph.startsWith(cc)) { localNum = ph.slice(cc.length); break; } }
+                $('bkPhone').value = localNum;
+            } else { $('bkName').value = ''; $('bkPhone').value = ''; }
             $('bkNote').value = '';
             $('bkModal').classList.remove('hidden');
         }
@@ -2523,8 +2317,8 @@
                 const ar = b.status === 'accepted'
                     ? `<button class="bs bs-rej" onclick="respond('${b.id}','rejected')">✕ Cancel</button>`
                     : b.status === 'rejected'
-                        ? `<button class="bs bs-acc" onclick="respond('${b.id}','accepted')">✓ Accept</button>`
-                        : `<button class="bs bs-acc" onclick="respond('${b.id}','accepted')">✓ Accept</button><button class="bs bs-rej" onclick="respond('${b.id}','rejected')">✕ Reject</button>`;
+                    ? `<button class="bs bs-acc" onclick="respond('${b.id}','accepted')">✓ Accept</button>`
+                    : `<button class="bs bs-acc" onclick="respond('${b.id}','accepted')">✓ Accept</button><button class="bs bs-rej" onclick="respond('${b.id}','rejected')">✕ Reject</button>`;
                 return `<div class="bk-item"><div class="bk-info"><div class="bk-name">👤 ${b.bookerName} <span style="font-weight:400;color:var(--text-light);font-size:11px;">${b.bookerPhone}</span></div><div class="bk-meta">📅 ${b.date} 🕐 ${b.start}–${b.end}${b.note ? ' 📝 ' + b.note : ''}</div>${badge(b.status)}</div><div class="bk-acts">${ar}${calB}</div></div>`;
             }).join('');
             if (!out.length) outEl.innerHTML = '<div class="empty"><span class="em">📭</span>No outgoing requests yet</div>';
@@ -2572,7 +2366,7 @@
             <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);padding:20px;font-family:sans-serif;">
                 <div style="background:white;padding:40px 30px;border-radius:24px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:400px;width:100%;">
                     <div style="font-size:50px;margin-bottom:15px;">📅</div>
-                    <h2 style="margin:0 0 15px;font-size:20px;color:#1e293b;line-height:1.4;">You received an invitation from <strong>${inviter}</strong> on ${dt} at ${formatTimeAmpm(parseInt(st.split(':')[0]), parseInt(st.split(':')[1] || 0))}.<br><br>Shall I add this to your Calendar?</h2>
+                    <h2 style="margin:0 0 15px;font-size:20px;color:#1e293b;line-height:1.4;">You received an invitation from <strong>${inviter}</strong> on ${dt} at ${formatTimeAmpm(parseInt(st.split(':')[0]), parseInt(st.split(':')[1]||0))}.<br><br>Shall I add this to your Calendar?</h2>
                     
                     <div style="display:flex;gap:10px;margin-top:25px;">
                         <button onclick="document.getElementById('calOpts').style.display='block';this.style.display='none';document.getElementById('noBtn').style.display='none'" style="flex:1;background:#22c55e;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">Yes</button>
@@ -2581,9 +2375,9 @@
                     
                     <div id="calOpts" style="display:none;margin-top:15px;">
                         <p style="margin-bottom:10px;font-size:14px;color:#64748b;">Choose your calendar:</p>
-                        <a href="${shareUrl(p.get('user'))}&add_dayvo=1&title=${encodeURIComponent(title)}&dt=${dt}&st=${st}&en=${en}&note=${encodeURIComponent(note)}" style="display:block;background:linear-gradient(135deg, #6366f1, #8b5cf6);color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;transition:0.2s;">Accept via Calgo</a>
                         <a href="${gcal}" target="_blank" style="display:block;background:#4285F4;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;transition:0.2s;">Google Calendar</a>
                         <a href="${icsUrl}" download="meeting.ics" style="display:block;background:#1e293b;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;transition:0.2s;">Apple / Outlook</a>
+                        <a href="https://king10asd.github.io/dayvo/" style="display:block;margin-top:20px;color:#6366f1;font-weight:bold;text-decoration:none;font-size:14px;">Try Calgo!</a>
                     </div>
                 </div>
             </div>`;
@@ -2598,33 +2392,14 @@
             const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(note || '')}`;
             const calUrl = shareUrl(CU.id) + `&event=1&title=${title}&dt=${dt}&st=${st}&en=${en}&note=${encodeURIComponent(note || '')}`;
 
-            return `You received an invitation from ${CU.name} 📅\n\nDate: ${dt}\nTime: ${t}\n\nAdd to your calendar:\n${calUrl}`;
+            return `You received an invitation from ${CU.name} 📅\n\nDate: ${dt}\nTime: ${t}\n${note ? 'Note: ' + note + '\n' : ''}\nAdd to your calendar:\n👉 ${calUrl}\n\nOr open in Google Calendar:\n👉 ${gcal}\n\n— Sent via Calgo: https://king10asd.github.io/dayvo/`;
         }
         function openSingle() { $('siDate').value = fmtD(new Date()); $('siPhone').value = ''; $('siNote').value = ''; $('siModal').classList.remove('hidden'); }
-        async function sendSingle() {
+        function sendSingle() {
             const cc = $('siCC').value, num = numVal('siPhone'), dt = $('siDate').value, st = $('siStart').value, en = $('siEnd').value, note = $('siNote').value.trim();
             if (!num || !dt || !st || !en) { toast('❌ Fill all fields'); return; } if (st >= en) { toast('❌ End after start'); return; }
-            if (isPastTime(dt, parseInt(st.split(':')[0]))) { toast('❌ Cannot invite in the past'); return; }
             const waNum = cc + num; // siCC values already have no +, correct for wa.me links
-
-            // Link to outgoing requests
-            const fullPhone = '+' + waNum;
-            let targetUid = waNum;
-            const us = Object.values(S.users());
-            const found = us.find(u => u.phone === fullPhone || u.phone === waNum);
-            if (found) targetUid = found.id;
-            else if (db) {
-                try {
-                    const snap = await db.collection('users').where('phone', '==', fullPhone).limit(1).get();
-                    if (!snap.empty) targetUid = snap.docs[0].id;
-                } catch (e) { }
-            }
-            const bk = { id: genId(), owner: targetUid, bookerName: CU.name, bookerPhone: CU.phone, date: dt, start: st, end: en, note: note, status: 'accepted', created: new Date().toISOString() };
-            pushBooking(bk);
-
             window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank'); toast('📨 Opening WhatsApp…');
-            cModal('siModal');
-            loadBk();
         }
         function addSingleCal() { const dt = $('siDate').value, st = $('siStart').value, en = $('siEnd').value, note = $('siNote').value.trim(); if (!dt || !st || !en) { toast('❌ Fill date/time'); return; } const t = encodeURIComponent(`Meeting – ${CU.name}`), sf = (dt + 'T' + st + ':00').replace(/[-:]/g, ''), ef = (dt + 'T' + en + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(note || 'Calgo')}`, '_blank'); toast('📅 Opening Calendar…'); }
 
@@ -2655,27 +2430,16 @@
         function sendOne(ph) {
             const dt = $('grDate').value, st = $('grStart').value, en = $('grEnd').value, note = $('grNote').value.trim();
             if (!dt || !st || !en) { toast('❌ Fill date/time first'); return; } if (st >= en) { toast('❌ End after start'); return; }
-            if (isPastTime(dt, parseInt(st.split(':')[0]))) { toast('❌ Cannot invite in the past'); return; }
-
-            const bk = { id: genId(), owner: ph, bookerName: CU.name, bookerPhone: CU.phone, date: dt, start: st, end: en, note: note, status: 'accepted', created: new Date().toISOString() };
-            pushBooking(bk);
-
             window.open(`https://wa.me/${ph}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank');
-            const c = GC.find(x => x.ph === ph); if (c) c.sent = true; renderGC(); loadBk();
+            const c = GC.find(x => x.ph === ph); if (c) c.sent = true; renderGC();
         }
         function sendAllGC() {
             if (!GC.length) { toast('❌ Add contacts first'); return; }
             const dt = $('grDate').value, st = $('grStart').value, en = $('grEnd').value, note = $('grNote').value.trim();
             if (!dt || !st || !en) { toast('❌ Fill date/time first'); return; } if (st >= en) { toast('❌ End after start'); return; }
-            if (isPastTime(dt, parseInt(st.split(':')[0]))) { toast('❌ Cannot invite in the past'); return; }
             const unsent = GC.filter(c => !c.sent);
             if (!unsent.length) { toast('✅ All already sent!'); return; }
-            unsent.forEach((c, i) => setTimeout(() => {
-                const bk = { id: genId(), owner: c.ph, bookerName: CU.name, bookerPhone: CU.phone, date: dt, start: st, end: en, note: note, status: 'accepted', created: new Date().toISOString() };
-                pushBooking(bk);
-                window.open(`https://wa.me/${c.ph}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank');
-                c.sent = true; renderGC(); loadBk();
-            }, i * 700));
+            unsent.forEach((c, i) => setTimeout(() => { window.open(`https://wa.me/${c.ph}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank'); c.sent = true; renderGC(); }, i * 700));
             toast(`📨 Sending to ${unsent.length}…`);
         }
 
@@ -2690,62 +2454,26 @@
             else nAv.textContent = CU.name.charAt(0).toUpperCase();
         }
         function enterApp() {
-            $('loadingScreen').classList.add('hidden');
-            $('loginScreen').classList.add('hidden');
-            $('publicView').classList.add('hidden');
-            $('mainApp').classList.remove('hidden');
-            updateNav(); showTab('calendar');
-
-            // Handle friend from URL if logged in after QR scan
-            const p = new URLSearchParams(window.location.search);
-            const urlUser = p.get('user');
-            if (urlUser && urlUser !== CU.id) {
-                addFriendByUid(urlUser);
-                window.history.replaceState({}, '', getUrl());
-            }
-
-            // Handle pending booking (user had to log in first)
-            const pBook = S.g('pending_book');
-            if (pBook) {
-                S.s('pending_book', null);
-                // Restore the VU if needed
-                const fUser = S.users()[pBook.targetUid];
-                if (fUser) { VU = fUser; openBook(pBook.date, pBook.start, pBook.targetUid); }
-            }
+            $('loginScreen').classList.add('hidden'); $('mainApp').classList.remove('hidden'); updateNav(); showTab('calendar');
 
             const pAdd = S.g('pending_add');
             if (pAdd) {
                 S.s('pending_add', null);
-                // Add inviter as friend
-                const friendUid = pAdd.inviterUid || 'unknown';
-                if (friendUid && friendUid !== 'unknown') { addFriendByUid(friendUid); }
-                // Block the slot in MY calendar
                 const existing = S.blocks().find(b => b.owner === CU.id && b.date === pAdd.dt && b.start === pAdd.st && b.end === pAdd.en);
                 if (!existing) {
                     pushBlock({ id: genId(), owner: CU.id, date: pAdd.dt, start: pAdd.st, end: pAdd.en, label: pAdd.title, created: new Date().toISOString() });
+                    toast('✅ Added to Calgo Calendar!');
+                    renderCal();
+                } else {
+                    toast('⚠️ Slot already busy in Calgo');
                 }
-                // Add to incoming bookings
-                const friendName = S.users()[friendUid]?.name || 'A Friend';
-                const friendPhone = S.users()[friendUid]?.phone || '';
-                const bk = { id: genId(), owner: CU.id, bookerName: friendName, bookerPhone: friendPhone, date: pAdd.dt, start: pAdd.st, end: pAdd.en, note: pAdd.note || '', status: 'accepted', created: new Date().toISOString() };
-                pushBooking(bk);
-                toast('✅ Event accepted and added to your calendar!');
-                renderCal();
-                showTab('bookings');
             }
         }
         function enterPublic(user) {
             VU = user;
-            // If the current user is logged in and different, add the viewed user as a friend automatically
             const saved = S.cur();
-            if (saved && saved.id && saved.id !== user.id) {
-                const su = S.users()[saved.id];
-                if (su) { CU = su; addFriend(user); }
-            }
-            $('loadingScreen').classList.add('hidden');
-            $('loginScreen').classList.add('hidden');
-            $('mainApp').classList.add('hidden');
-            $('publicView').classList.remove('hidden');
+            if (saved && saved.id && saved.id !== user.id) { const su = S.users()[saved.id]; if (su) { CU = su; addFriend(user); } }
+            $('loginScreen').classList.add('hidden'); $('publicView').classList.remove('hidden');
             $('pubName').textContent = user.name;
             const av = $('pubAv'); av.innerHTML = user.avatar ? `<img src="${user.avatar}">` : `${user.name.charAt(0).toUpperCase()}`;
             renderCal();
@@ -2785,7 +2513,7 @@
             const p = new URLSearchParams(window.location.search), uid = p.get('user'), event = p.get('event'), addDayvo = p.get('add_dayvo');
 
             if (addDayvo) {
-                S.s('pending_add', { title: p.get('title'), dt: p.get('dt'), st: p.get('st'), en: p.get('en'), inviterUid: p.get('user'), note: p.get('note') });
+                S.s('pending_add', { title: p.get('title'), dt: p.get('dt'), st: p.get('st'), en: p.get('en') });
                 window.history.replaceState({}, '', getUrl());
             }
             else if (event) { handleEventUrl(p); return; }
@@ -2806,34 +2534,28 @@
                             let allBksMap = {}; S.bookings().forEach(b => allBksMap[b.id] = b);
                             bSnap.forEach(d => allBksMap[d.id] = d.data());
                             S.setBookings(Object.values(allBksMap));
+
                             let allBlksMap = {}; S.blocks().forEach(b => allBlksMap[b.id] = b);
                             blSnap.forEach(d => allBlksMap[d.id] = d.data());
                             S.setBlocks(Object.values(allBlksMap));
                         } catch (e) { }
                     }
                     const saved = S.cur();
-                    if (saved && saved.id === uid) { CU = user; enterApp(); syncMyData(); }
-                    else if (saved && saved.id) {
-                        const su = S.users()[saved.id] || saved;
-                        CU = su;
-                        enterPublic(user);
-                        syncMyData();
-                    }
-                    else { enterPublic(user); }
+                    if (saved && saved.id === uid) { CU = user; enterApp(); syncMyData(); } else { enterPublic(user); }
                 }
-                else {
-                    const saved = S.cur();
-                    if (saved && saved.id) { CU = saved; pushUser(CU); enterApp(); syncMyData(); }
-                    else { $('loginScreen').classList.remove('hidden'); }
-                }
+                else toast('❌ User not found');
             } else {
                 const saved = S.cur();
                 if (saved && saved.id) {
-                    CU = saved; pushUser(CU); enterApp(); syncMyData();
-                } else {
-                    // No saved session — show login. Firebase onAuthStateChanged may still sign them in silently.
-                    $('loginScreen').classList.remove('hidden');
+                    const us = S.users();
+                    if (us[saved.id]) {
+                        CU = us[saved.id]; enterApp(); syncMyData();
+                    }
                 }
             }
         }
         init();
+    </script>
+</body>
+
+</html>
