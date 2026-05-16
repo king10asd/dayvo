@@ -1982,11 +1982,9 @@
                 firebaseReady = firebaseConfig.apiKey !== 'YOUR_API_KEY';
                 if (firebaseReady) {
                     db = firebase.firestore();
+                    // Handles silent re-login on page refresh for Google users
                     firebase.auth().onAuthStateChanged(async (u) => {
-                        if (u && !authStateProcessed) {
-                            // Firebase user signed in (e.g. after Google OAuth popup)
-                            authStateProcessed = true;
-                            $('loadingScreen').classList.add('hidden');
+                        if (u) {
                             const uid = u.uid;
                             let us = S.users(), userData = us[uid];
                             if (db && !userData) {
@@ -1998,13 +1996,11 @@
                             if (!userData) { userData = { id: uid, name: u.displayName || 'User', phone: u.phoneNumber || u.email || u.uid, provider: 'google', avatar: u.photoURL || null, email: u.email, firebaseUid: uid, created: new Date().toISOString() }; }
                             pushUser(userData);
                             CU = userData; S.setCur(CU);
-                            if (VU && VU.id !== CU.id) { addFriend(VU); VU = null; }
-                            if (!$('mainApp') || $('mainApp').classList.contains('hidden')) {
+                            if (VU && VU.id !== CU.id) { addFriend(VU); renderCal(); }
+                            else if (!$('mainApp') || $('mainApp').classList.contains('hidden')) {
+                                $('loadingScreen').classList.add('hidden');
                                 await syncMyData();
                                 enterApp();
-                                toast('✅ Signed in as ' + CU.name);
-                            } else {
-                                syncMyData();
                             }
                         }
                     });
@@ -2081,16 +2077,14 @@
                 return;
             }
             try {
-                // Show loading screen during sign-in popup
                 $('loadingScreen').classList.remove('hidden');
-                $('loginScreen').classList.add('hidden');
                 let authProvider = new firebase.auth.GoogleAuthProvider();
                 const result = await firebase.auth().signInWithPopup(authProvider);
                 const u = result.user;
                 const name = u.displayName || 'User';
                 const phone = u.phoneNumber || u.email || u.uid;
                 const avatar = u.photoURL || null;
-                const uid = u.uid; // Firebase UID
+                const uid = u.uid;
 
                 let us = S.users();
                 let userData = us[uid];
