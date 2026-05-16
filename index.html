@@ -1482,7 +1482,7 @@
     </div>
 
     <!-- LOGIN (starts hidden; shown by init() if no session) -->
-    <div id="loginScreen" class="login-screen hidden">
+    <div id="loginScreen" class="login-screen">
         <div class="login-card">
             <div class="logo-icon">📅</div>
             <h1>Calgo</h1>
@@ -1569,7 +1569,9 @@
                     </div>
                     <div class="p-name" id="pName"></div>
                     <div class="p-phone" id="pPhone"></div>
-                    <button onclick="openEditProfile()" style="margin-top:10px;padding:6px 16px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-weight:600;font-size:12px;cursor:pointer;">✏️ Edit Profile</button>
+                    <button onclick="openEditProfile()"
+                        style="margin-top:10px;padding:6px 16px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-weight:600;font-size:12px;cursor:pointer;">✏️
+                        Edit Profile</button>
                 </div>
 
                 <!-- FRIENDS -->
@@ -1586,14 +1588,19 @@
                         <div
                             style="background:white;border-left:4px solid var(--primary);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--text-light);">
                             <strong style="color:var(--primary);">How to add friends:</strong><br>
-                            1. <strong>Share your Calendar link</strong> — when they open it, they're added automatically<br>
+                            1. <strong>Share your Calendar link</strong> — when they open it, they're added
+                            automatically<br>
                             2. <strong>Scan their QR Code</strong> — use the camera button below
                         </div>
                         <div style="text-align:center;">
-                            <button class="btn-p" onclick="startScanner()" style="width:auto;padding:10px 20px;font-size:14px;">📷 Scan Friend's QR Code</button>
+                            <button class="btn-p" onclick="startScanner()"
+                                style="width:auto;padding:10px 20px;font-size:14px;">📷 Scan Friend's QR Code</button>
                         </div>
-                        <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 10px auto; display:none; border-radius:14px; overflow:hidden;"></div>
-                        <div style="font-size:11px;color:var(--text-light);margin-top:10px;text-align:center;">Or share your link below &mdash;
+                        <div id="qr-reader"
+                            style="width: 100%; max-width: 300px; margin: 10px auto; display:none; border-radius:14px; overflow:hidden;">
+                        </div>
+                        <div style="font-size:11px;color:var(--text-light);margin-top:10px;text-align:center;">Or share
+                            your link below &mdash;
                             friends who open it are added automatically.</div>
                     </div>
                     <div id="friendsList"></div>
@@ -1903,7 +1910,8 @@
         <div class="modal">
             <h3>✏️ Edit Profile</h3>
             <div class="mr"><label>Your Name</label><input type="text" id="epName" style="margin:0;"></div>
-            <div class="mr"><label>Phone Number (with country code)</label><input type="tel" id="epPhone" placeholder="+9665xxxxxxxx" style="margin:0;"></div>
+            <div class="mr"><label>Phone Number (with country code)</label><input type="tel" id="epPhone"
+                    placeholder="+9665xxxxxxxx" style="margin:0;"></div>
             <div class="m-acts">
                 <button class="btn-p" onclick="saveProfile()" style="flex:1;">Save</button>
                 <button class="btn-x" onclick="cModal('epModal')" style="flex:1;">Cancel</button>
@@ -2173,7 +2181,7 @@
                         const url = new URL(text);
                         const uid = url.searchParams.get('user');
                         if (uid) { addFriendByUid(uid); } else { toast('❌ Invalid QR code'); }
-                    } catch(e) { toast('❌ Invalid QR code'); }
+                    } catch (e) { toast('❌ Invalid QR code'); }
                 }, (error) => { });
             }
         }
@@ -2186,7 +2194,7 @@
                 try {
                     const snap = await db.collection('users').doc(uid).get();
                     if (snap.exists) { found = snap.data(); us[found.id] = found; S.setUsers(us); }
-                } catch(e) {}
+                } catch (e) { }
             }
             if (found) { addFriend(found); renderFriends(); toast('✅ ' + found.name + ' added to friends!'); }
             else { toast('❌ User not found'); }
@@ -2233,9 +2241,9 @@
             <div class="f-av">${avH(u)}</div>
             <div class="f-name">${u.name}</div>
             <div class="f-btns">
-                <button class="fb fb-v" onclick="viewFriendCal('${u.id}')">📅</button>
-                <button class="fb fb-i" onclick="prefillInvite('${u.id}')">📨</button>
-                <button class="fb fb-r" onclick="confirmRemoveFriend('${u.id}','${u.name.replace(/'/g,&quot;&quot;)}')">✕</button>
+                <button class="fb fb-v" onclick="viewFriendCal('${u.id}')">&#128197;</button>
+                <button class="fb fb-i" onclick="prefillInvite('${u.id}')">&#128232;</button>
+                <button class="fb fb-r" onclick="confirmRemoveFriend('${u.id}','${u.name.replace(/'/g, '&#39;')}')">&times;</button>
             </div>
         </div>`).join('')}</div>`;
         }
@@ -2604,7 +2612,7 @@
             if (!num || !dt || !st || !en) { toast('❌ Fill all fields'); return; } if (st >= en) { toast('❌ End after start'); return; }
             if (isPastTime(dt, parseInt(st.split(':')[0]))) { toast('❌ Cannot invite in the past'); return; }
             const waNum = cc + num; // siCC values already have no +, correct for wa.me links
-            
+
             // Link to outgoing requests
             const fullPhone = '+' + waNum;
             let targetUid = waNum;
@@ -2615,7 +2623,7 @@
                 try {
                     const snap = await db.collection('users').where('phone', '==', fullPhone).limit(1).get();
                     if (!snap.empty) targetUid = snap.docs[0].id;
-                } catch(e){}
+                } catch (e) { }
             }
             const bk = { id: genId(), owner: targetUid, bookerName: CU.name, bookerPhone: CU.phone, date: dt, start: st, end: en, note: note, status: 'accepted', created: new Date().toISOString() };
             pushBooking(bk);
@@ -2654,7 +2662,7 @@
             const dt = $('grDate').value, st = $('grStart').value, en = $('grEnd').value, note = $('grNote').value.trim();
             if (!dt || !st || !en) { toast('❌ Fill date/time first'); return; } if (st >= en) { toast('❌ End after start'); return; }
             if (isPastTime(dt, parseInt(st.split(':')[0]))) { toast('❌ Cannot invite in the past'); return; }
-            
+
             const bk = { id: genId(), owner: ph, bookerName: CU.name, bookerPhone: CU.phone, date: dt, start: st, end: en, note: note, status: 'accepted', created: new Date().toISOString() };
             pushBooking(bk);
 
@@ -2668,10 +2676,10 @@
             if (isPastTime(dt, parseInt(st.split(':')[0]))) { toast('❌ Cannot invite in the past'); return; }
             const unsent = GC.filter(c => !c.sent);
             if (!unsent.length) { toast('✅ All already sent!'); return; }
-            unsent.forEach((c, i) => setTimeout(() => { 
+            unsent.forEach((c, i) => setTimeout(() => {
                 const bk = { id: genId(), owner: c.ph, bookerName: CU.name, bookerPhone: CU.phone, date: dt, start: st, end: en, note: note, status: 'accepted', created: new Date().toISOString() };
                 pushBooking(bk);
-                window.open(`https://wa.me/${c.ph}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank'); 
+                window.open(`https://wa.me/${c.ph}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank');
                 c.sent = true; renderGC(); loadBk();
             }, i * 700));
             toast(`📨 Sending to ${unsent.length}…`);
