@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dayvo - Share & Book</title>
+    <title>Calgo - Let's Go!</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="FriendCal">
+    <meta name="apple-mobile-web-app-title" content="Calgo">
     <link rel="apple-touch-icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50'>📅</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -980,7 +980,7 @@
         }
 
         .mo-cell {
-            aspect-ratio: 1;
+            min-height: 52px;
             background: #f8fafc;
             border-radius: 13px;
             display: flex;
@@ -991,6 +991,7 @@
             transition: 0.2s;
             border: 2px solid transparent;
             padding: 5px;
+            overflow: hidden;
         }
 
         .mo-cell:hover {
@@ -1456,8 +1457,8 @@
     <div id="loginScreen" class="login-screen">
         <div class="login-card">
             <div class="logo-icon">📅</div>
-            <h1>Dayvo</h1>
-            <p class="subtitle">Share your calendar. Book with friends.</p>
+            <h1>Calgo</h1>
+            <p class="subtitle">Let's Go!</p>
             <button class="oauth-btn" onclick="oAuth('google')">
                 <svg viewBox="0 0 24 24">
                     <path fill="#4285F4"
@@ -1496,7 +1497,7 @@
     <!-- MAIN APP -->
     <div id="mainApp" class="app hidden">
         <div class="top-bar">
-            <h2>📅 Dayvo</h2>
+            <h2>📅 Calgo</h2>
             <div class="user-chip" onclick="toggleProfileMenu(event)">
                 <div class="av" id="navAv"></div>
                 <span id="navName" style="font-weight:600;font-size:13px;"></span>
@@ -1509,6 +1510,7 @@
                     <div class="pd-item" onclick="event.stopPropagation();showTab('profile')">👤 My Profile & Friends
                     </div>
                     <div class="pd-item" onclick="event.stopPropagation();showTab('calendar')">📅 Calendar</div>
+                    <div class="pd-item" onclick="event.stopPropagation();showTab('bookings')">📋 Bookings</div>
                     <div class="pd-sep"></div>
                     <div class="pd-item danger" onclick="event.stopPropagation();logout()">🚪 Log Out</div>
                 </div>
@@ -1544,7 +1546,29 @@
                 <!-- FRIENDS -->
                 <div style="margin-bottom:18px;">
                     <div class="friends-title">👥 My Friends <span id="fCount"
-                            style="font-size:12px;color:var(--text-light);font-weight:400;"></span></div>
+                            style="font-size:12px;color:var(--text-light);font-weight:400;"></span>
+                        <button onclick="$('addFriendBox').classList.toggle('hidden')" style="margin-left:auto;width:auto;padding:5px 13px;font-size:12px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;cursor:pointer;font-weight:700;">+ Add Friend</button>
+                    </div>
+                    <!-- Add Friend Box -->
+                    <div id="addFriendBox" class="hidden" style="background:#f8fafc;border-radius:14px;border:2px dashed var(--border);padding:14px;margin-bottom:12px;">
+                        <div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">Add by phone number:</div>
+                        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
+                            <div class="ph" style="margin:0;flex:1;min-width:180px;"><select id="afCC" style="margin:0;width:90px;padding:10px 4px;font-size:11px;">
+                                <option value="966">🇸🇦 +966</option>
+                                <option value="971">🇦🇪 +971</option>
+                                <option value="965">🇰🇼 +965</option>
+                                <option value="974">🇶🇦 +974</option>
+                                <option value="973">🇧🇭 +973</option>
+                                <option value="968">🇴🇲 +968</option>
+                                <option value="962">🇯🇴 +962</option>
+                                <option value="20">🇪🇬 +20</option>
+                                <option value="1">🇺🇸 +1</option>
+                                <option value="44">🇬🇧 +44</option>
+                            </select><input type="tel" id="afPhone" placeholder="5xxxxxxxx" style="margin:0;" onkeydown="if(event.key==='Enter')addFriendByPhone()"></div>
+                            <button onclick="addFriendByPhone()" style="width:auto;padding:10px 16px;margin:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;font-size:13px;cursor:pointer;">Find</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-light);margin-top:8px;">Or share your link below — friends who open it are added automatically.</div>
+                    </div>
                     <div id="friendsList"></div>
                 </div>
 
@@ -1607,7 +1631,16 @@
         </div>
 
         <!-- BOOKINGS -->
-        <div id="bookingsTab" class="hidden"></div>
+        <div id="bookingsTab" class="hidden">
+            <div class="card">
+                <h3>📥 Incoming Requests</h3>
+                <div id="inBk"></div>
+            </div>
+            <div class="card">
+                <h3>📤 Outgoing Requests</h3>
+                <div id="outBk"></div>
+            </div>
+        </div>
     </div>
 
     <!-- PUBLIC VIEW -->
@@ -1703,10 +1736,10 @@
             <div class="mr"><label>Message (optional)</label><textarea id="grNote" rows="2" style="margin:0;"
                     placeholder="You're invited!"></textarea></div>
             <div class="sep" style="margin:14px 0;"></div>
-            <div class="mr">
+                <div class="mr">
                 <label>Add Phone Number</label>
-                <div style="display:flex;gap:7px;align-items:center;">
-                    <div class="ph" style="margin:0;flex:1;"><select id="grCC">
+                <div style="display:flex;gap:7px;align-items:center;flex-wrap:nowrap;overflow:hidden;">
+                    <div class="ph" style="margin:0;flex:1;min-width:0;overflow:hidden;"><select id="grCC" style="margin:0;width:80px;flex-shrink:0;padding:10px 3px;font-size:11px;">
                             <option value="966">🇸🇦 +966</option>
                             <option value="971">🇦🇪 +971</option>
                             <option value="965">🇰🇼 +965</option>
@@ -1714,10 +1747,10 @@
                             <option value="20">🇪🇬 +20</option>
                             <option value="1">🇺🇸 +1</option>
                             <option value="44">🇬🇧 +44</option>
-                        </select><input type="tel" id="grPhone" placeholder="5xxxxxxxx" style="margin:0;"
+                        </select><input type="tel" id="grPhone" placeholder="5xxxxxxxx" style="margin:0;min-width:0;"
                             onkeydown="if(event.key==='Enter')addGC()"></div>
                     <button onclick="addGC()"
-                        style="width:auto;padding:13px 14px;margin:0;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:16px;">+</button>
+                        style="width:38px;height:38px;padding:0;margin:0;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;">+</button>
                 </div>
             </div>
             <div id="grProgress" class="hidden prog-wrap">
@@ -1737,6 +1770,35 @@
                 </button>
                 <button class="btn-x" onclick="cModal('grModal')"
                     style="flex:1;padding:13px;font-size:13px;border-radius:13px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Export -->
+    <div id="expModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('expModal')">
+        <div class="modal">
+            <h3>📤 Export to Google Calendar</h3>
+            <p style="font-size:13px;color:var(--text-light);text-align:center;margin-bottom:14px;">Select which events to export:</p>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                <button onclick="expToggleAll(true)" style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#eef2ff;color:var(--primary);border:none;cursor:pointer;font-weight:700;">Select All</button>
+                <button onclick="expToggleAll(false)" style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#f1f5f9;color:var(--text-light);border:none;cursor:pointer;font-weight:700;">Deselect All</button>
+            </div>
+            <div id="expList" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;"></div>
+            <div class="m-acts" style="margin-top:16px;">
+                <button class="btn-p" onclick="doExport()" style="flex:2;">📤 Export Selected</button>
+                <button class="btn-x" onclick="cModal('expModal')" style="flex:1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Booking Confirmation -->
+    <div id="bkConfirmModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('bkConfirmModal')">
+        <div class="modal" style="text-align:center;">
+            <div style="font-size:52px;margin-bottom:12px;">🎉</div>
+            <h3 style="margin-bottom:12px;">Booking Confirmed!</h3>
+            <div id="bkConfirmMsg" style="font-size:15px;line-height:1.6;margin-bottom:20px;"></div>
+            <div class="m-acts" style="flex-direction:column;gap:9px;">
+                <button class="btn-p" onclick="cModal('bkConfirmModal')" style="width:100%;">Done</button>
             </div>
         </div>
     </div>
@@ -1766,7 +1828,7 @@
         /* ── UTILS ── */
         const $ = id => document.getElementById(id);
         function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
-        function fmtD(d) { return d.toISOString().split('T')[0]; }
+        function fmtD(d) { const y=d.getFullYear(),mo=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0'); return `${y}-${mo}-${dy}`; }
         function pTime(t) { const [h, m] = t.split(':').map(Number); return h + m / 60; }
         function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
         function getUrl() { return window.location.href.split('?')[0].split('#')[0]; }
@@ -1777,10 +1839,12 @@
         function fullNum(ccId, numId) { return ccVal(ccId).replace('+', '') + numVal(numId); }
         function fullNumDisp(ccId, numId) { return ccVal(ccId) + numVal(numId); }
 
-        function formatTimeAmpm(hour) {
+        function formatTimeAmpm(hour, minute) {
+            const m = minute !== undefined ? minute : 0;
             const ampm = hour >= 12 ? 'PM' : 'AM';
             const h = hour % 12 || 12;
-            return `${h}:00 ${ampm}`;
+            const mm = m > 0 ? ':' + m.toString().padStart(2, '0') : ':00';
+            return `${h}${mm} ${ampm}`;
         }
 
         /* ── AUTH & DATA ── */
@@ -1941,6 +2005,33 @@
         }
 
         /* ── FRIENDS ── */
+        async function addFriendByPhone() {
+            const cc = $('afCC').value, num = $('afPhone').value.trim().replace(/^0+/, '');
+            if (!num) { toast('❌ Enter a phone number'); return; }
+            const fullPhone = '+' + cc + num;
+            // Search locally first
+            const us = S.users();
+            let found = Object.values(us).find(u => u.phone === fullPhone || u.phone === cc + num);
+            // Try Firestore if not found locally
+            if (!found && db) {
+                try {
+                    toast('🔍 Searching…');
+                    const snap = await db.collection('users').where('phone', '==', fullPhone).limit(1).get();
+                    if (!snap.empty) { found = snap.docs[0].data(); let u2 = S.users(); u2[found.id] = found; S.setUsers(u2); }
+                    if (!found) {
+                        const snap2 = await db.collection('users').where('phone', '==', cc + num).limit(1).get();
+                        if (!snap2.empty) { found = snap2.docs[0].data(); let u2 = S.users(); u2[found.id] = found; S.setUsers(u2); }
+                    }
+                } catch (e) { console.error(e); }
+            }
+            if (!found) { toast('❌ No user found with that number'); return; }
+            if (found.id === CU.id) { toast('⚠️ That\'s your own number!'); return; }
+            addFriend(found);
+            renderFriends();
+            $('afPhone').value = '';
+            $('addFriendBox').classList.add('hidden');
+            toast('✅ ' + found.name + ' added to friends!');
+        }
         function addFriend(friendUser) {
             if (!CU || CU.id === friendUser.id) return;
             let fr = S.friends(CU.id);
@@ -1980,9 +2071,17 @@
         function prefillInvite(uid) {
             const u = S.users()[uid]; if (!u) return;
             openSingle();
-            const ph = u.phone;
-            const codes = ['966', '971', '965', '974', '973', '968', '962', '20', '1', '44'];
-            for (const cc of codes) { if (ph.startsWith('+' + cc)) { $('siCC').value = cc; $('siPhone').value = ph.slice(cc.length + 1); break; } }
+            let ph = u.phone.replace(/^\+/, ''); // strip leading +
+            const codes = ['966','971','965','974','973','968','962','20','1','44'];
+            // Sort longest first to avoid partial matches (e.g. '1' matching before '966')
+            const sorted = [...codes].sort((a,b) => b.length - a.length);
+            for (const cc of sorted) {
+                if (ph.startsWith(cc)) {
+                    $('siCC').value = cc;
+                    $('siPhone').value = ph.slice(cc.length);
+                    break;
+                }
+            }
         }
 
         /* ── PROFILE ── */
@@ -1999,7 +2098,7 @@
             renderFriends();
         }
         function copyLink() { const v = $('shareLink').value; navigator.clipboard.writeText(v).then(() => toast('📋 Copied!')).catch(() => { $('shareLink').select(); document.execCommand('copy'); toast('📋 Copied!'); }); }
-        function waShare() { const url = shareUrl(CU.id); window.open(`https://wa.me/?text=${encodeURIComponent('📅 Day-Vo with me!\n\n' + url)}`, '_blank'); }
+        function waShare() { const url = shareUrl(CU.id); window.open(`https://wa.me/?text=${encodeURIComponent('📅 Book a slot with me!\n\n' + url)}`, '_blank'); }
 
         /* ── TABS ── */
         function showTab(t) {
@@ -2020,7 +2119,7 @@
         /* ── CALENDAR VIEWS ── */
         function setView(v) { curView = v; const p = VU ? 'pub-' : ''; document.querySelectorAll('.view-sw button').forEach(b => b.classList.remove('active')); $(p + 'view-' + v)?.classList.add('active'); renderCal(); }
         function chDate(d) { if (curView === 'day') curDate.setDate(curDate.getDate() + d); else if (curView === 'week') curDate.setDate(curDate.getDate() + d * 7); else curDate.setMonth(curDate.getMonth() + d); renderCal(); }
-        function goToday() { curDate = new Date(); renderCal(); }
+        function goToday() { curDate = new Date(); renderCal(); toast('📅 Today'); }
         function renderCal() {
             const uid = VU ? VU.id : CU.id, pub = !!VU;
             const el = $(pub ? 'pubCalView' : 'calView'), tl = $(pub ? 'pubTitle' : 'calTitle');
@@ -2032,8 +2131,13 @@
             const t = hour.toString().padStart(2, '0') + ':00';
             const te = (hour + 1).toString().padStart(2, '0') + ':00';
             const existing = S.blocks().find(b => b.owner === CU.id && b.date === ds && b.start === t && b.end === te);
-            if (existing) { deleteBlock(existing.id); }
-            else { pushBlock({ id: genId(), owner: CU.id, date: ds, start: t, end: te, label: '', created: new Date().toISOString() }); }
+            if (existing) {
+                deleteBlock(existing.id);
+                toast('✅ ' + t + ' marked Available');
+            } else {
+                pushBlock({ id: genId(), owner: CU.id, date: ds, start: t, end: te, label: '', created: new Date().toISOString() });
+                toast('⛔ ' + t + ' marked Busy — tap again to undo');
+            }
             renderCal();
         }
         function saveSlotTag(ds, hour, inputEl) {
@@ -2087,7 +2191,7 @@
             let h = '<div class="wk-grid"><div></div>';
             for (let i = 0; i < 7; i++) { const d = new Date(sow); d.setDate(sow.getDate() + i); const td = d.toDateString() === new Date().toDateString(); h += `<div class="wk-hdr" style="${td ? 'color:var(--primary);font-weight:800;' : ''}">${days[i]}<br><small>${d.getDate()}</small></div>`; }
             for (let i = 0; i < 24; i++) {
-                const t = formatTimeAmpm(i).replace(':00', '');
+                const t = (() => { const ampm = i >= 12 ? 'PM' : 'AM'; const h = i % 12 || 12; return `${h}${ampm}`; })();
                 const isNight = (i < 6 || i >= 18);
                 const nightCls = isNight ? ' night-time' : '';
                 h += `<div class="wk-hl${nightCls}">${t}</div>`;
@@ -2127,7 +2231,7 @@
             for (let d = 1; d <= ld.getDate(); d++) { const dt = new Date(curDate.getFullYear(), curDate.getMonth(), d), ds = fmtD(dt), busy = dayBusy(ds, uid), isT = dt.toDateString() === today.toDateString(); let cls = ''; if (busy) cls += ' busy'; if (isT) cls += ' today'; h += `<div class="mo-cell${cls}" onclick="selDate(${d})"><div class="dn">${d}</div><div class="ds">${busy ? 'Busy' : ''}</div></div>`; }
             el.innerHTML = h + '</div>';
         }
-        function selDate(d) { curDate.setDate(d); setView('day'); }
+        function selDate(d) { curDate = new Date(curDate.getFullYear(), curDate.getMonth(), d); setView('day'); }
 
         /* ── IMPORT / EXPORT CALENDAR ── */
         function importFromGCal() {
@@ -2135,17 +2239,35 @@
             toast('📥 Opening Google Calendar — copy your events manually');
         }
         function exportToGCal() {
-            // Export all accepted bookings as an event batch — open one by one for today's month
             const bks = S.bookings().filter(b => b.owner === CU.id && b.status === 'accepted');
             const blks = S.blocks().filter(b => b.owner === CU.id);
-            const all = [...bks.map(b => ({ date: b.date, start: b.start, end: b.end, label: `Appt – ${b.bookerName}` })), ...blks.map(b => ({ date: b.date, start: b.start, end: b.end, label: b.label || 'Busy' }))];
-            if (!all.length) { toast('No events to export'); return; }
-            all.forEach((e, i) => setTimeout(() => {
-                const sf = (e.date + 'T' + e.start + ':00').replace(/[-:]/g, ''), ef = (e.date + 'T' + e.end + ':00').replace(/[-:]/g, '');
-                window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.label)}&dates=${sf}/${ef}`, '_blank');
-            }, i * 800));
-            toast(`📤 Exporting ${all.length} event(s)…`);
+            if (!bks.length && !blks.length) { toast('No events to export'); return; }
+            // Build modal content
+            const rows = [
+                ...bks.map(b => ({ id: b.id, type: 'booking', label: `📅 Appt – ${b.bookerName}`, meta: `${b.date}  ${b.start}–${b.end}`, date: b.date, start: b.start, end: b.end })),
+                ...blks.map(b => ({ id: b.id, type: 'block', label: `⛔ ${b.label || 'Busy'}`, meta: `${b.date}  ${b.start}–${b.end}`, date: b.date, start: b.start, end: b.end }))
+            ].sort((a, b) => a.date.localeCompare(b.date));
+            const listHtml = rows.map(r => `
+                <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border-radius:11px;border:1px solid var(--border);cursor:pointer;font-size:13px;">
+                    <input type="checkbox" class="exp-cb" data-id="${r.id}" data-type="${r.type}" data-date="${r.date}" data-start="${r.start}" data-end="${r.end}" data-label="${encodeURIComponent(r.label)}" checked style="width:16px;height:16px;margin:0;padding:0;border:none;flex-shrink:0;cursor:pointer;">
+                    <span style="flex:1;"><strong>${r.label}</strong><br><span style="color:var(--text-light);font-size:11px;">${r.meta}</span></span>
+                </label>`).join('');
+            $('expList').innerHTML = listHtml;
+            $('expModal').classList.remove('hidden');
         }
+        function doExport() {
+            const checked = document.querySelectorAll('.exp-cb:checked');
+            if (!checked.length) { toast('❌ Select at least one event'); return; }
+            cModal('expModal');
+            checked.forEach((cb, i) => setTimeout(() => {
+                const lbl = decodeURIComponent(cb.dataset.label);
+                const sf = (cb.dataset.date + 'T' + cb.dataset.start + ':00').replace(/[-:]/g, '');
+                const ef = (cb.dataset.date + 'T' + cb.dataset.end + ':00').replace(/[-:]/g, '');
+                window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(lbl)}&dates=${sf}/${ef}`, '_blank');
+            }, i * 800));
+            toast(`📤 Exporting ${checked.length} event(s)…`);
+        }
+        function expToggleAll(val) { document.querySelectorAll('.exp-cb').forEach(cb => cb.checked = val); }
 
         /* ── BOOK MODAL (universal) ── */
         let bookTargetUid = null;
@@ -2153,8 +2275,15 @@
             bookTargetUid = targetUid || (VU ? VU.id : null);
             $('bkDate').value = date; $('bkStart').value = start;
             const [h, m] = start.split(':'); $('bkEnd').value = `${(+h + 1).toString().padStart(2, '0')}:${m}`;
-            // Pre-fill booker info if logged in
-            if (CU) { $('bkName').value = CU.name; $('bkPhone').value = CU.phone.replace(/^\+\d+/, ''); } else { $('bkName').value = ''; $('bkPhone').value = ''; }
+            if (CU) {
+                $('bkName').value = CU.name;
+                // Strip country code reliably — same logic as prefillInvite
+                let ph = CU.phone.replace(/^\+/, '');
+                const codes = ['966','971','965','974','973','968','962','20','1','44'].sort((a,b) => b.length - a.length);
+                let localNum = ph;
+                for (const cc of codes) { if (ph.startsWith(cc)) { localNum = ph.slice(cc.length); break; } }
+                $('bkPhone').value = localNum;
+            } else { $('bkName').value = ''; $('bkPhone').value = ''; }
             $('bkNote').value = '';
             $('bkModal').classList.remove('hidden');
         }
@@ -2167,7 +2296,12 @@
             if (conflict) { toast('⛔ Slot is busy'); return; }
             const bk = { id: genId(), owner: targetUid, bookerName: name, bookerPhone: phone, date: dt, start: st, end: en, note, status: 'accepted', created: new Date().toISOString() };
             pushBooking(bk);
-            cModal('bkModal'); toast('📨 Booking request sent!'); renderCal();
+            cModal('bkModal');
+            renderCal();
+            // Show confirmation
+            const ownerName = VU ? VU.name : (S.users()[targetUid]?.name || 'the host');
+            $('bkConfirmMsg').innerHTML = `✅ Booking confirmed with <strong>${ownerName}</strong><br><small style="color:var(--text-light);">📅 ${dt} &nbsp; 🕐 ${st}–${en}</small>`;
+            $('bkConfirmModal').classList.remove('hidden');
         }
 
         /* ── BOOKINGS ── */
@@ -2180,7 +2314,11 @@
             if (!inc.length) inEl.innerHTML = '<div class="empty"><span class="em">📭</span>No incoming requests yet<br><small style="margin-top:7px;display:block;">Share your calendar to get bookings!</small></div>';
             else inEl.innerHTML = inc.map(b => {
                 const calB = b.status === 'accepted' ? `<button class="bs bs-cal" onclick="bkToCal('${b.id}')">📅</button>` : '';
-                const ar = '';
+                const ar = b.status === 'accepted'
+                    ? `<button class="bs bs-rej" onclick="respond('${b.id}','rejected')">✕ Cancel</button>`
+                    : b.status === 'rejected'
+                    ? `<button class="bs bs-acc" onclick="respond('${b.id}','accepted')">✓ Accept</button>`
+                    : `<button class="bs bs-acc" onclick="respond('${b.id}','accepted')">✓ Accept</button><button class="bs bs-rej" onclick="respond('${b.id}','rejected')">✕ Reject</button>`;
                 return `<div class="bk-item"><div class="bk-info"><div class="bk-name">👤 ${b.bookerName} <span style="font-weight:400;color:var(--text-light);font-size:11px;">${b.bookerPhone}</span></div><div class="bk-meta">📅 ${b.date} 🕐 ${b.start}–${b.end}${b.note ? ' 📝 ' + b.note : ''}</div>${badge(b.status)}</div><div class="bk-acts">${ar}${calB}</div></div>`;
             }).join('');
             if (!out.length) outEl.innerHTML = '<div class="empty"><span class="em">📭</span>No outgoing requests yet</div>';
@@ -2189,8 +2327,25 @@
                 return `<div class="bk-item"><div class="bk-info"><div class="bk-name">📅 With: ${us[b.owner]?.name || 'User'}</div><div class="bk-meta">📅 ${b.date} 🕐 ${b.start}–${b.end}</div>${badge(b.status)}</div><div class="bk-acts">${calB}</div></div>`;
             }).join('');
         }
-        function respond(id, st) { let bk = S.bookings(); const b = bk.find(x => x.id === id); if (b) { b.status = st; b.respondedAt = new Date().toISOString(); pushBooking(b); } toast(st === 'accepted' ? '✅ Accepted' : '❌ Rejected'); loadBk(); }
-        function bkToCal(id) { const b = S.bookings().find(x => x.id === id); if (!b) return; const t = encodeURIComponent(`Appt – ${b.bookerName}`), sf = (b.date + 'T' + b.start + ':00').replace(/[-:]/g, ''), ef = (b.date + 'T' + b.end + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(b.note || 'Dayvo')}`, '_blank'); toast('📅 Opening Calendar…'); }
+        function respond(id, st) {
+            let bk = S.bookings(); const b = bk.find(x => x.id === id);
+            if (b) {
+                b.status = st; b.respondedAt = new Date().toISOString();
+                pushBooking(b);
+                // Sync: when accepted, add a block so all calendar views (day/week/month) see it as Busy
+                if (st === 'accepted') {
+                    const existing = S.blocks().find(bl => bl.owner === b.owner && bl.date === b.date && bl.start === b.start && bl.end === b.end);
+                    if (!existing) pushBlock({ id: genId(), owner: b.owner, date: b.date, start: b.start, end: b.end, label: `Appt – ${b.bookerName}`, created: new Date().toISOString() });
+                }
+                // Sync: when rejected/cancelled, remove the linked block if present
+                if (st === 'rejected') {
+                    const linked = S.blocks().find(bl => bl.owner === b.owner && bl.date === b.date && bl.start === b.start && bl.end === b.end && (bl.label || '').startsWith('Appt –'));
+                    if (linked) deleteBlock(linked.id);
+                }
+            }
+            toast(st === 'accepted' ? '✅ Accepted' : '❌ Rejected'); loadBk(); renderCal();
+        }
+        function bkToCal(id) { const b = S.bookings().find(x => x.id === id); if (!b) return; const t = encodeURIComponent(`Appt – ${b.bookerName}`), sf = (b.date + 'T' + b.start + ':00').replace(/[-:]/g, ''), ef = (b.date + 'T' + b.end + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(b.note || 'Calgo')}`, '_blank'); toast('📅 Opening Calendar…'); }
 
         /* ── SINGLE INVITE ── */
         function handleEventUrl(p) {
@@ -2211,7 +2366,7 @@
             <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);padding:20px;font-family:sans-serif;">
                 <div style="background:white;padding:40px 30px;border-radius:24px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:400px;width:100%;">
                     <div style="font-size:50px;margin-bottom:15px;">📅</div>
-                    <h2 style="margin:0 0 15px;font-size:20px;color:#1e293b;line-height:1.4;">You received an invitation from <strong>${inviter}</strong> on ${dt} at ${formatTimeAmpm(parseInt(st.split(':')[0]))}.<br><br>Shall I add this to your Calendar?</h2>
+                    <h2 style="margin:0 0 15px;font-size:20px;color:#1e293b;line-height:1.4;">You received an invitation from <strong>${inviter}</strong> on ${dt} at ${formatTimeAmpm(parseInt(st.split(':')[0]), parseInt(st.split(':')[1]||0))}.<br><br>Shall I add this to your Calendar?</h2>
                     
                     <div style="display:flex;gap:10px;margin-top:25px;">
                         <button onclick="document.getElementById('calOpts').style.display='block';this.style.display='none';document.getElementById('noBtn').style.display='none'" style="flex:1;background:#22c55e;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">Yes</button>
@@ -2222,30 +2377,31 @@
                         <p style="margin-bottom:10px;font-size:14px;color:#64748b;">Choose your calendar:</p>
                         <a href="${gcal}" target="_blank" style="display:block;background:#4285F4;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;transition:0.2s;">Google Calendar</a>
                         <a href="${icsUrl}" download="meeting.ics" style="display:block;background:#1e293b;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;transition:0.2s;">Apple / Outlook</a>
-                        <a href="https://king10asd.github.io/dayvo/" style="display:block;margin-top:20px;color:#6366f1;font-weight:bold;text-decoration:none;font-size:14px;">Try Dayvo!</a>
+                        <a href="https://king10asd.github.io/dayvo/" style="display:block;margin-top:20px;color:#6366f1;font-weight:bold;text-decoration:none;font-size:14px;">Try Calgo!</a>
                     </div>
                 </div>
             </div>`;
         }
 
         function invMsg(dt, st, en, note) {
-            const [h, m] = st.split(':');
-            const t = formatTimeAmpm(parseInt(h));
+            const [h, m] = st.split(':').map(Number);
+            const t = formatTimeAmpm(h, m);
             const title = encodeURIComponent(`Meeting with ${CU.name}`);
             const sf = (dt + 'T' + st + ':00').replace(/[-:]/g, '');
             const ef = (dt + 'T' + en + ':00').replace(/[-:]/g, '');
             const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(note || '')}`;
             const calUrl = shareUrl(CU.id) + `&event=1&title=${title}&dt=${dt}&st=${st}&en=${en}&note=${encodeURIComponent(note || '')}`;
 
-            return `يا هلا اجتماعنا الساعة ${t} تاريخ ${dt} رتب موعدك عبر: ${gcal}\n\nأو\n\n${calUrl}\n\nTry Dayvo!\nhttps://king10asd.github.io/dayvo/`;
+            return `You received an invitation from ${CU.name} 📅\n\nDate: ${dt}\nTime: ${t}\n${note ? 'Note: ' + note + '\n' : ''}\nAdd to your calendar:\n👉 ${calUrl}\n\nOr open in Google Calendar:\n👉 ${gcal}\n\n— Sent via Calgo: https://king10asd.github.io/dayvo/`;
         }
         function openSingle() { $('siDate').value = fmtD(new Date()); $('siPhone').value = ''; $('siNote').value = ''; $('siModal').classList.remove('hidden'); }
         function sendSingle() {
             const cc = $('siCC').value, num = numVal('siPhone'), dt = $('siDate').value, st = $('siStart').value, en = $('siEnd').value, note = $('siNote').value.trim();
             if (!num || !dt || !st || !en) { toast('❌ Fill all fields'); return; } if (st >= en) { toast('❌ End after start'); return; }
-            window.open(`https://wa.me/${cc + num}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank'); toast('📨 Opening WhatsApp…');
+            const waNum = cc + num; // siCC values already have no +, correct for wa.me links
+            window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(invMsg(dt, st, en, note))}`, '_blank'); toast('📨 Opening WhatsApp…');
         }
-        function addSingleCal() { const dt = $('siDate').value, st = $('siStart').value, en = $('siEnd').value, note = $('siNote').value.trim(); if (!dt || !st || !en) { toast('❌ Fill date/time'); return; } const t = encodeURIComponent(`Meeting – ${CU.name}`), sf = (dt + 'T' + st + ':00').replace(/[-:]/g, ''), ef = (dt + 'T' + en + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(note || 'Dayvo')}`, '_blank'); toast('📅 Opening Calendar…'); }
+        function addSingleCal() { const dt = $('siDate').value, st = $('siStart').value, en = $('siEnd').value, note = $('siNote').value.trim(); if (!dt || !st || !en) { toast('❌ Fill date/time'); return; } const t = encodeURIComponent(`Meeting – ${CU.name}`), sf = (dt + 'T' + st + ':00').replace(/[-:]/g, ''), ef = (dt + 'T' + en + ':00').replace(/[-:]/g, ''); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${sf}/${ef}&details=${encodeURIComponent(note || 'Calgo')}`, '_blank'); toast('📅 Opening Calendar…'); }
 
         /* ── GROUP INVITE ── */
         function openGroup() { GC = []; $('grDate').value = fmtD(new Date()); $('grPhone').value = ''; $('grNote').value = ''; $('grProgress').classList.add('hidden'); renderGC(); $('grModal').classList.remove('hidden'); }
@@ -2306,10 +2462,10 @@
                 const existing = S.blocks().find(b => b.owner === CU.id && b.date === pAdd.dt && b.start === pAdd.st && b.end === pAdd.en);
                 if (!existing) {
                     pushBlock({ id: genId(), owner: CU.id, date: pAdd.dt, start: pAdd.st, end: pAdd.en, label: pAdd.title, created: new Date().toISOString() });
-                    toast('✅ Added to Dayvo Calendar!');
+                    toast('✅ Added to Calgo Calendar!');
                     renderCal();
                 } else {
-                    toast('⚠️ Slot already busy in Dayvo');
+                    toast('⚠️ Slot already busy in Calgo');
                 }
             }
         }
