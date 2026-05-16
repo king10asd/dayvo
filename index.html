@@ -1454,8 +1454,8 @@
 
 <body>
 
-    <!-- LOADING -->
-    <div id="loadingScreen" class="login-screen"
+    <!-- LOADING (shown only during active sign-in) -->
+    <div id="loadingScreen" class="login-screen hidden"
         style="z-index:9999;position:fixed;top:0;left:0;width:100%;height:100%;">
         <div style="text-align:center;color:white;">
             <div class="logo-icon" style="animation: pulse 1.5s infinite ease-in-out;">📅</div>
@@ -1481,8 +1481,8 @@
         </div>
     </div>
 
-    <!-- LOGIN -->
-    <div id="loginScreen" class="login-screen">
+    <!-- LOGIN (starts hidden; shown by init() if no session) -->
+    <div id="loginScreen" class="login-screen hidden">
         <div class="login-card">
             <div class="logo-icon">📅</div>
             <h1>Calgo</h1>
@@ -1975,11 +1975,10 @@
                 if (firebaseReady) {
                     db = firebase.firestore();
                     firebase.auth().onAuthStateChanged(async (u) => {
-                        // Always hide loading screen immediately when auth state is known
-                        $('loadingScreen').classList.add('hidden');
                         if (u && !authStateProcessed) {
-                            // User is signed in via Firebase
+                            // Firebase user signed in (e.g. after Google OAuth popup)
                             authStateProcessed = true;
+                            $('loadingScreen').classList.add('hidden');
                             const uid = u.uid;
                             let us = S.users(), userData = us[uid];
                             if (db && !userData) {
@@ -1992,20 +1991,12 @@
                             pushUser(userData);
                             CU = userData; S.setCur(CU);
                             if (VU && VU.id !== CU.id) { addFriend(VU); VU = null; }
-                            // Only enter app if not already in it
                             if (!$('mainApp') || $('mainApp').classList.contains('hidden')) {
                                 await syncMyData();
                                 enterApp();
                                 toast('✅ Signed in as ' + CU.name);
                             } else {
                                 syncMyData();
-                            }
-                        }
-                        // If u is null and no saved session, show login screen
-                        else if (!u && !CU) {
-                            const saved = S.cur();
-                            if (!saved || !saved.id) {
-                                $('loginScreen').classList.remove('hidden');
                             }
                         }
                     });
@@ -2015,9 +2006,9 @@
             } else {
                 $('loadingScreen').classList.add('hidden');
             }
-        } catch (e) { console.warn('Firebase init skipped:', e.message); $('loadingScreen').classList.add('hidden'); }
-        // Safety timeout: hide loading screen after 3s maximum
-        setTimeout(() => { if ($('loadingScreen') && !$('loadingScreen').classList.contains('hidden')) $('loadingScreen').classList.add('hidden'); }, 3000);
+        } catch (e) { console.warn('Firebase init skipped:', e.message); }
+        // Safety: hide loading screen after 3s no matter what
+        setTimeout(() => { $('loadingScreen').classList.add('hidden'); }, 3000);
 
         function pushUser(u) {
             let us = S.users(); us[u.id] = u; S.setUsers(us);
@@ -2082,7 +2073,9 @@
                 return;
             }
             try {
+                // Show loading screen during sign-in popup
                 $('loadingScreen').classList.remove('hidden');
+                $('loginScreen').classList.add('hidden');
                 let authProvider = new firebase.auth.GoogleAuthProvider();
                 const result = await firebase.auth().signInWithPopup(authProvider);
                 const u = result.user;
@@ -2111,6 +2104,7 @@
                 toast('✅ Signed in as ' + name);
             } catch (e) {
                 $('loadingScreen').classList.add('hidden');
+                $('loginScreen').classList.remove('hidden');
                 console.error('Auth error:', e);
                 if (e.code === 'auth/popup-closed-by-user') toast('⚠️ Sign-in cancelled');
                 else toast('❌ Sign-in failed: ' + (e.message || 'Unknown error'));
@@ -2828,14 +2822,16 @@
                 else {
                     const saved = S.cur();
                     if (saved && saved.id) { CU = saved; pushUser(CU); enterApp(); syncMyData(); }
-                    else { $('loadingScreen').classList.add('hidden'); }
+                    else { $('loginScreen').classList.remove('hidden'); }
                 }
             } else {
                 const saved = S.cur();
                 if (saved && saved.id) {
                     CU = saved; pushUser(CU); enterApp(); syncMyData();
+                } else {
+                    // No saved session — show login. Firebase onAuthStateChanged may still sign them in silently.
+                    $('loginScreen').classList.remove('hidden');
                 }
-                // If no saved session, onAuthStateChanged will handle it (or 3s timeout)
             }
         }
         init();
