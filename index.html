@@ -1569,6 +1569,7 @@
                     </div>
                     <div class="p-name" id="pName"></div>
                     <div class="p-phone" id="pPhone"></div>
+                    <button onclick="openEditProfile()" style="margin-top:10px;padding:6px 16px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-weight:600;font-size:12px;cursor:pointer;">✏️ Edit Profile</button>
                 </div>
 
                 <!-- FRIENDS -->
@@ -1918,6 +1919,19 @@
         </div>
     </div>
 
+    <!-- MODAL: Edit Profile -->
+    <div id="epModal" class="modal-ov hidden" onclick="if(event.target===this)cModal('epModal')">
+        <div class="modal">
+            <h3>✏️ Edit Profile</h3>
+            <div class="mr"><label>Your Name</label><input type="text" id="epName" style="margin:0;"></div>
+            <div class="mr"><label>Phone Number (with country code)</label><input type="tel" id="epPhone" placeholder="+9665xxxxxxxx" style="margin:0;"></div>
+            <div class="m-acts">
+                <button class="btn-p" onclick="saveProfile()" style="flex:1;">Save</button>
+                <button class="btn-x" onclick="cModal('epModal')" style="flex:1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script>
@@ -2078,11 +2092,7 @@
                 const result = await firebase.auth().signInWithPopup(authProvider);
                 const u = result.user;
                 const name = u.displayName || 'User';
-                let phone = u.phoneNumber;
-                if (!phone) {
-                    phone = prompt('Please enter your phone number with country code (e.g. +9665xxxxxxxx):');
-                    if (!phone) phone = u.email || u.uid;
-                }
+                const phone = u.phoneNumber || u.email || u.uid;
                 const avatar = u.photoURL || null;
                 const uid = u.uid; // Firebase UID
 
@@ -2259,6 +2269,24 @@
         }
         function copyLink() { const v = $('shareLink').value; navigator.clipboard.writeText(v).then(() => toast('📋 Copied!')).catch(() => { $('shareLink').select(); document.execCommand('copy'); toast('📋 Copied!'); }); }
         function waShare() { const url = shareUrl(CU.id); window.open(`https://wa.me/?text=${encodeURIComponent('📅 Book a slot with me!\n\n' + url)}`, '_blank'); }
+
+        function openEditProfile() {
+            if (!CU) return;
+            $('epName').value = CU.name;
+            $('epPhone').value = CU.phone;
+            $('epModal').classList.remove('hidden');
+        }
+        function saveProfile() {
+            const n = $('epName').value.trim();
+            const p = $('epPhone').value.trim();
+            if (!n || !p) { toast('❌ Fill all fields'); return; }
+            CU.name = n; CU.phone = p;
+            pushUser(CU);
+            S.setCur(CU);
+            renderProfile(); updateNav();
+            cModal('epModal');
+            toast('✅ Profile updated');
+        }
 
         /* ── TABS ── */
         function showTab(t) {
@@ -2763,16 +2791,11 @@
                     const saved = S.cur();
                     if (saved && saved.id === uid) { CU = user; enterApp(); syncMyData(); } else { enterPublic(user); }
                 }
-                else { toast('❌ User not found'); const saved = S.cur(); if (saved && saved.id) { const us = S.users(); if (us[saved.id]) { CU = us[saved.id]; enterApp(); syncMyData(); } else { $('loadingScreen').classList.add('hidden'); } } else { $('loadingScreen').classList.add('hidden'); } }
+                else { toast('❌ User not found'); const saved = S.cur(); if (saved && saved.id) { CU = saved; pushUser(CU); enterApp(); syncMyData(); } else { $('loadingScreen').classList.add('hidden'); } }
             } else {
                 const saved = S.cur();
                 if (saved && saved.id) {
-                    const us = S.users();
-                    if (us[saved.id]) {
-                        CU = us[saved.id]; enterApp(); syncMyData();
-                    } else {
-                        $('loadingScreen').classList.add('hidden');
-                    }
+                    CU = saved; pushUser(CU); enterApp(); syncMyData();
                 } else {
                     $('loadingScreen').classList.add('hidden');
                 }
