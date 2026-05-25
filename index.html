@@ -1079,7 +1079,9 @@ function initializeFirebase() {
 
 async function handleFirebaseAuthStateChange(firebaseUser) {
     if (!firebaseUser) return;
+    if ($('mainApp').classList.contains('hidden')) {
     showLoadingOverlay('Restoring your session…');
+    }
     const uid = firebaseUser.uid;
     let userData = Storage.getUsers()[uid];
     if (firestoreDb && !userData) {
@@ -1096,6 +1098,7 @@ async function handleFirebaseAuthStateChange(firebaseUser) {
         enterApp();                   // Enter immediately
         syncCurrentUserData();        // Sync in background
     } else {
+        hideLoadingOverlay();   // App already loaded — dismiss any lingering overlay
         syncCurrentUserData();
     }
 }
