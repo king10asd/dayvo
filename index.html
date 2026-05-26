@@ -1,1 +1,3044 @@
 
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calgo - Let's Go!</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Calgo">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50'>📅</text></svg>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* ── CSS CUSTOM PROPERTIES ── */
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        /* ── RESET ── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .hidden { display: none !important; }
+
+        /* ── ANIMATIONS ── */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.95) }
+            to   { opacity: 1; transform: translateY(0) scale(1) }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px) }
+            to   { opacity: 1; transform: translateY(0) }
+        }
+
+        /* ── LOGIN SCREEN ── */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            padding: 20px;
+        }
+        .login-card {
+            background: var(--card);
+            padding: 48px 38px;
+            border-radius: 28px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .logo-icon {
+            width: 68px; height: 68px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 22px;
+            font-size: 34px;
+            box-shadow: 0 10px 30px rgba(99,102,241,0.3);
+        }
+        .login-card h1     { font-size: 26px; margin-bottom: 6px; }
+        .login-card .subtitle { color: var(--text-light); margin-bottom: 28px; font-size: 14px; }
+
+        /* ── OAUTH BUTTON ── */
+        .oauth-btn {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            width: 100%; padding: 13px 18px; margin: 9px 0;
+            border: 2px solid var(--border); border-radius: 13px;
+            background: white; cursor: pointer;
+            font-size: 14px; font-weight: 600; color: var(--text);
+            transition: all 0.2s;
+        }
+        .oauth-btn:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .oauth-btn svg   { width: 20px; height: 20px; }
+
+        /* ── DIVIDER ── */
+        .divider { display: flex; align-items: center; margin: 20px 0; color: var(--text-light); font-size: 13px; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .divider span { padding: 0 14px; }
+
+        /* ── FORM INPUTS ── */
+        input, button, select, textarea {
+            width: 100%; padding: 13px 16px; margin: 7px 0;
+            border: 2px solid var(--border); border-radius: 13px;
+            font-size: 14px; outline: none; transition: all 0.2s;
+            font-family: inherit; background: white; color: var(--text);
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99,102,241,0.1);
+        }
+
+        /* ── PHONE FIELD ── */
+        .phone-field { display: flex; gap: 7px; margin: 7px 0; }
+        .phone-field select { width: 128px; flex-shrink: 0; margin: 0; padding: 13px 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .phone-field input  { flex: 1; margin: 0; }
+
+        /* ── PRIMARY BUTTON ── */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; border: none; font-weight: 700; font-size: 15px;
+            cursor: pointer; border-radius: 13px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(99,102,241,0.35); }
+
+        /* ── APP LAYOUT ── */
+        .app { max-width: 960px; margin: 0 auto; padding: 18px; }
+
+        /* ── TOP BAR ── */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .top-bar h2 { font-size: 22px; display: flex; align-items: center; gap: 8px; }
+
+        /* ── USER CHIP ── */
+        .user-chip {
+            display: flex; align-items: center; gap: 9px;
+            background: var(--card); padding: 7px 14px; border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06); cursor: pointer; transition: 0.2s;
+            position: relative;
+        }
+        .user-chip:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+        /* ── AVATAR ── */
+        .avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 15px; overflow: hidden; flex-shrink: 0;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* ── PROFILE DROPDOWN ── */
+        .profile-dropdown {
+            position: absolute; top: calc(100% + 8px); right: 0;
+            background: var(--card); border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15); border: 1px solid var(--border);
+            min-width: 220px; z-index: 500;
+            opacity: 0; transform: translateY(-8px) scale(0.96);
+            pointer-events: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden;
+        }
+        .profile-dropdown.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        .dropdown-header { padding: 16px 18px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+        .dropdown-user-name  { font-weight: 700; font-size: 15px; }
+        .dropdown-user-phone { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+        .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 12px 18px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.15s; }
+        .dropdown-item:hover { background: #f1f5f9; }
+        .dropdown-item.danger { color: var(--danger); }
+        .dropdown-item.danger:hover { background: #fef2f2; }
+        .dropdown-separator { height: 1px; background: var(--border); margin: 4px 0; }
+
+        /* ── ACTION BUTTONS ── */
+        .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .action-btn {
+            flex: 1; min-width: 140px; padding: 10px 16px; margin: 0; border: none; border-radius: 13px;
+            font-weight: 700; font-size: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            color: white; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        .action-btn.ab-invite { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+        .action-btn.ab-group  { background: linear-gradient(135deg, #25D366, #128C7E); }
+        .action-btn.ab-import { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+        .action-btn.ab-export { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .action-btn.ab-recurring { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+
+        /* ── TODAY BUTTON ── */
+        .cal-nav .btn-today {
+            width: 38px; height: 38px; padding: 0; margin: 0; border-radius: 11px; font-size: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none; color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.25);
+        }
+        .cal-nav .btn-today:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(99,102,241,0.35); }
+
+        /* ── INSTALL BAR ── */
+        .install-bar { display: flex; justify-content: center; margin-bottom: 16px; }
+        .install-btn {
+            display: flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 50px;
+            font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid var(--border);
+            background: var(--card); color: var(--text); transition: all 0.2s;
+            width: auto; margin: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .install-btn:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); color: var(--primary); }
+        .install-btn svg { width: 18px; height: 18px; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card); border-radius: 22px; padding: 28px; margin-bottom: 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border); animation: fadeIn 0.35s ease;
+        }
+        .card h3 { font-size: 17px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .separator { height: 1px; background: var(--border); margin: 22px 0; }
+
+        /* ── PROFILE TAB ── */
+        .profile-header    { text-align: center; padding: 16px 0 8px; }
+        .profile-avatar-wrapper { position: relative; display: inline-block; margin-bottom: 14px; }
+        .profile-avatar {
+            width: 110px; height: 110px; border-radius: 50%;
+            border: 4px solid white; box-shadow: 0 8px 28px rgba(0,0,0,0.14);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 44px; font-weight: bold; overflow: hidden; cursor: pointer;
+        }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-avatar-edit-btn {
+            position: absolute; bottom: 4px; right: 4px; width: 33px; height: 33px;
+            background: var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; cursor: pointer; border: 3px solid white; font-size: 14px; transition: 0.2s;
+        }
+        .profile-avatar-edit-btn:hover { transform: scale(1.1); }
+        .profile-name  { font-size: 24px; font-weight: 800; margin-bottom: 3px; }
+        .profile-phone { color: var(--text-light); font-size: 14px; margin-bottom: 18px; }
+
+        /* ── FRIENDS ── */
+        .friends-title { font-size: 15px; font-weight: 700; margin-bottom: 11px; display: flex; align-items: center; gap: 7px; }
+        .friends-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
+        .friends-scroll::-webkit-scrollbar       { height: 3px; }
+        .friends-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .friend-chip {
+            flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 5px;
+            cursor: pointer; padding: 7px; border-radius: 14px; transition: 0.2s;
+            border: 2px solid transparent; min-width: 70px;
+        }
+        .friend-chip:hover { background: #eef2ff; border-color: var(--primary); }
+        .friend-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 18px; overflow: hidden;
+        }
+        .friend-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .friend-name { font-size: 11px; font-weight: 700; text-align: center; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .friend-action-btns { display: flex; gap: 3px; margin-top: 2px; }
+        .friend-btn { font-size: 10px; padding: 3px 7px; border-radius: 7px; border: none; cursor: pointer; font-weight: 700; margin: 0; width: auto; }
+        .friend-btn-view   { background: #eef2ff; color: var(--primary); }
+        .friend-btn-invite { background: #dcfce7; color: #16a34a; }
+        .friend-btn-remove { background: #fee2e2; color: var(--danger); }
+        .no-friends-message { color: var(--text-light); font-size: 13px; text-align: center; padding: 14px; background: #f8fafc; border-radius: 14px; border: 2px dashed var(--border); }
+
+        /* ── SHARE / QR BOX ── */
+        .share-box { background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 18px; padding: 22px; text-align: center; border: 2px dashed var(--border); }
+        .share-box h4 { margin-bottom: 5px; font-size: 15px; }
+        .share-box .share-subtitle { color: var(--text-light); font-size: 12px; margin-bottom: 12px; }
+        #qrcode { display: flex; justify-content: center; margin: 12px auto; padding: 12px; background: white; border-radius: 14px; width: fit-content; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+        .share-link-row { display: flex; gap: 7px; margin-top: 12px; }
+        .share-link-row input  { flex: 1; margin: 0; font-size: 12px; }
+        .share-link-row button { width: auto; margin: 0; padding: 11px 18px; white-space: nowrap; }
+        .whatsapp-share-btn {
+            display: inline-flex; align-items: center; gap: 7px; margin-top: 11px; padding: 11px 22px;
+            background: #25D366; color: white; border: none; border-radius: 50px;
+            font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto;
+        }
+        .whatsapp-share-btn:hover { background: #1ebe5d; transform: translateY(-2px); box-shadow: 0 5px 18px rgba(37,211,102,0.35); }
+
+        /* ── CALENDAR TOOLBAR ── */
+        .cal-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+        .cal-title   { font-size: 17px; font-weight: 700; }
+        .cal-nav     { display: flex; gap: 7px; }
+        .cal-nav button { width: 38px; height: 38px; padding: 0; margin: 0; border-radius: 11px; font-size: 17px; background: var(--card); border: 2px solid var(--border); cursor: pointer; }
+        .cal-nav button:hover { border-color: var(--primary); }
+        .view-switcher { display: flex; gap: 5px; margin-bottom: 18px; justify-content: center; }
+        .view-switcher button { width: auto; padding: 9px 20px; margin: 0; border-radius: 11px; font-size: 13px; font-weight: 600; background: #f1f5f9; color: var(--text-light); border: none; cursor: pointer; }
+        .view-switcher button.active { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+
+        /* ── DAY VIEW ── */
+        .day-grid { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+        .hour-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 50px; }
+        .hour-row.has-label { min-height: 68px; }
+        .hour-row:last-child { border-bottom: none; }
+        .hour-label { width: 64px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); font-size: 12px; background: #f8fafc; border-right: 1px solid var(--border); flex-shrink: 0; }
+        .hour-slot { flex: 1; padding: 9px 13px; display: flex; align-items: center; font-size: 13px; cursor: pointer; transition: 0.15s; }
+        .hour-slot:hover { background: #f1f5f9; }
+        .hour-slot.busy, .hour-slot.blocked { background: #fef2f2; color: var(--danger); font-weight: 700; }
+        .hour-slot .slot-label  { flex: 1; }
+        .hour-slot .slot-action { font-size: 11px; padding: 3px 10px; border-radius: 18px; background: var(--primary); color: white; opacity: 0; transition: 0.2s; }
+        .hour-slot:hover .slot-action { opacity: 1; }
+        .slot-tag-input { flex: 1; margin: 0; padding: 3px 9px; font-size: 11px; font-weight: 600; border: 1px dashed #fca5a5; border-radius: 7px; background: rgba(255,255,255,0.7); color: #b91c1c; height: 24px; width: 100%; cursor: text; }
+        .slot-tag-input:focus { border-color: #ef4444; background: white; box-shadow: 0 0 0 3px rgba(239,68,68,0.12); outline: none; }
+
+        /* ── WEEK VIEW ── */
+        .week-grid { display: grid; grid-template-columns: 50px repeat(7, 1fr); gap: 3px; font-size: 11px; }
+        .week-day-header  { text-align: center; font-weight: 700; color: var(--primary); padding: 8px 3px; font-size: 11px; }
+        .week-hour-label  { text-align: center; padding: 5px 2px; color: var(--text-light); font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+        .week-cell { background: #f8fafc; border-radius: 7px; min-height: 32px; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; transition: 0.15s; font-weight: 600; }
+        .week-cell:hover { background: #e0e7ff; }
+        .week-cell.busy, .week-cell.blocked { background: #fecaca; color: var(--danger); }
+        .week-cell.today { box-shadow: inset 0 0 0 2px var(--primary); }
+
+        /* ── MONTH VIEW ── */
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .month-day-header { text-align: center; font-weight: 700; color: var(--primary); padding: 9px 4px; font-size: 13px; }
+        .month-cell { min-height: 52px; background: #f8fafc; border-radius: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; border: 2px solid transparent; padding: 5px; overflow: hidden; }
+        .month-cell:hover { border-color: var(--primary); background: #eef2ff; transform: translateY(-2px); }
+        .month-cell .day-number { font-weight: 800; font-size: 15px; }
+        .month-cell .day-status { font-size: 9px; margin-top: 2px; font-weight: 600; }
+        .month-cell.other-month { opacity: 0.2; pointer-events: none; }
+        .month-cell.today       { border-color: var(--primary); background: #eef2ff; }
+        .month-cell.busy, .month-cell.blocked { background: #fef2f2; }
+        .month-cell.busy .day-number, .month-cell.blocked .day-number { color: var(--danger); }
+
+        /* ── BOOKINGS ── */
+        .booking-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 16px; background: #f8fafc; border-radius: 14px; margin-bottom: 9px; border: 1px solid var(--border); transition: 0.2s; gap: 10px; }
+        .booking-item:hover { border-color: var(--primary); }
+        .booking-info    { flex: 1; }
+        .booking-name    { font-weight: 700; font-size: 14px; }
+        .booking-meta    { font-size: 12px; color: var(--text-light); margin-top: 3px; }
+        .booking-actions { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+        .booking-status-btn { width: auto; padding: 7px 12px; margin: 0; font-size: 12px; border-radius: 9px; border: none; cursor: pointer; font-weight: 600; }
+        .booking-status-btn.accept   { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .booking-status-btn.reject   { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .booking-status-btn.calendar { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .empty-state .empty-icon { font-size: 36px; margin-bottom: 9px; display: block; }
+        .empty-state { text-align: center; padding: 36px 16px; color: var(--text-light); }
+        .status-badge { display: inline-block; padding: 3px 11px; border-radius: 18px; font-size: 11px; font-weight: 700; margin-top: 7px; }
+        /* Pending booking highlight */
+        .booking-item.pending-booking { border-color: #f59e0b; background: #fffbeb; }
+        .booking-item.pending-booking:hover { border-color: #d97706; }
+
+        /* ── MODALS ── */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 18px; backdrop-filter: blur(8px); animation: fadeIn 0.2s ease; }
+        .modal { background: var(--card); padding: 26px; border-radius: 22px; width: 100%; max-width: 470px; box-shadow: 0 25px 80px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { font-size: 19px; margin-bottom: 18px; text-align: center; }
+        .modal-field { margin-bottom: 12px; }
+        .modal-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-light); margin-bottom: 4px; }
+        .modal-field input, .modal-field select, .modal-field textarea { margin: 0; }
+        .modal-actions { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+        .modal-actions button { flex: 1; margin: 0; min-width: 100px; }
+        .btn-cancel { background: #f1f5f9; color: var(--text); border: none; cursor: pointer; }
+
+        /* ── WHATSAPP BUTTON ── */
+        .whatsapp-btn { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 13px; background: #25D366; color: white; border: none; border-radius: 13px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; flex: 1; }
+        .whatsapp-btn:hover { background: #1ebe5d; }
+
+        /* ── GROUP INVITE ── */
+        .group-contact-list { display: flex; flex-direction: column; gap: 7px; margin: 9px 0; max-height: 260px; overflow-y: auto; }
+        .group-contact-row  { display: flex; align-items: center; gap: 9px; padding: 9px 12px; background: #f8fafc; border-radius: 13px; border: 1px solid var(--border); }
+        .group-contact-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; flex-shrink: 0; }
+        .group-contact-info  { flex: 1; }
+        .group-contact-phone { font-weight: 700; font-size: 13px; }
+        .group-send-btn { padding: 7px 12px; border: none; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s; flex-shrink: 0; }
+        .group-send-btn.unsent { background: #25D366; color: white; }
+        .group-send-btn.unsent:hover { background: #1ebe5d; }
+        .group-send-btn.done   { background: #dcfce7; color: #16a34a; cursor: default; }
+        .group-remove-btn { padding: 6px 9px; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; background: #fee2e2; color: var(--danger); font-weight: 700; flex-shrink: 0; }
+
+        /* ── PROGRESS BAR ── */
+        .progress-wrapper { margin: 9px 0 3px; }
+        .progress-bar  { height: 5px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #25D366, #128C7E); border-radius: 10px; transition: width 0.4s ease; }
+        .progress-label { font-size: 11px; color: var(--text-light); text-align: center; margin-top: 4px; }
+
+        /* ── PUBLIC VIEW ── */
+        .public-banner { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 18px 22px; border-radius: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; }
+        .public-avatar { width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; overflow: hidden; flex-shrink: 0; }
+        .public-avatar img  { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .public-user-name   { font-size: 19px; font-weight: 800; }
+        .public-user-subtitle { font-size: 13px; opacity: 0.85; }
+
+        /* ── TOAST ── */
+        .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(120px); background: var(--text); color: white; padding: 13px 26px; border-radius: 50px; font-size: 13px; font-weight: 600; z-index: 2000; opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 10px 38px rgba(0,0,0,0.2); white-space: nowrap; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── NIGHT TIME ── */
+        .hour-row.night-time         { background: #f8fafc; opacity: 0.9; }
+        .hour-row.night-time .hour-label { color: #64748b; }
+        .hour-slot.night-time        { background: rgba(0,0,0,0.02); }
+        .week-cell.night-time        { background: rgba(0,0,0,0.02); color: #64748b; }
+        .week-hour-label.night-time  { color: #94a3b8; }
+
+        /* ── PAST SLOTS ── */
+        .hour-row.past-time          { opacity: 0.55; }
+        .hour-slot.past-time         { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; pointer-events: none; }
+        .week-cell.past-time         { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; pointer-events: none; font-style: italic; }
+        .month-cell.past-day         { opacity: 0.45; pointer-events: none; cursor: default; }
+        .month-cell.past-day:hover   { transform: none; border-color: transparent; background: #f8fafc; }
+        .past-label                  { font-size: 10px; color: #94a3b8; }
+
+        /* ── DURATION PICKER ── */
+        .duration-picker-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+        .duration-chip {
+            padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 700;
+            border: 2px solid var(--border); background: #f8fafc; color: var(--text-light);
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+        }
+        .duration-chip:hover  { border-color: var(--primary); color: var(--primary); }
+        .duration-chip.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
+
+        /* ── RECURRING SLOTS MODAL ── */
+        .recurrence-day-grid { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+        .recurrence-day-chip {
+            width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--border);
+            background: #f8fafc; color: var(--text-light); font-size: 12px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+        }
+        .recurrence-day-chip.selected { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
+        .recurrence-preview { font-size: 12px; color: var(--text-light); background: #f8fafc; border-radius: 10px; padding: 10px 14px; margin-top: 8px; border: 1px solid var(--border); line-height: 1.6; }
+
+        /* ── NOTIFICATION BADGE ── */
+        .notif-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+            border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .notif-badge.granted  { background: #dcfce7; color: #16a34a; }
+        .notif-badge.denied   { background: #fee2e2; color: #dc2626; }
+        .notif-badge.default  { background: #eef2ff; color: var(--primary); border: 2px solid var(--border); }
+
+        /* ── LOADING OVERLAY ── */
+        .loading-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 18px; transition: opacity 0.5s ease;
+        }
+        .loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+        .loading-logo {
+            width: 80px; height: 80px;
+            background: rgba(255,255,255,0.2); border-radius: 24px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 42px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: loadingPulse 1.6s ease-in-out infinite;
+        }
+        .loading-title    { color: white; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+        .loading-subtitle { color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 500; }
+        .loading-spinner  {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.3); border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes loadingPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+            50%       { transform: scale(1.08); box-shadow: 0 16px 50px rgba(0,0,0,0.3); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── REMEMBER ME ── */
+        .remember-me-row { display: flex; align-items: center; gap: 9px; margin: 2px 0 8px; cursor: pointer; user-select: none; }
+        .remember-me-row input[type="checkbox"] { width: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+        .remember-me-row span { font-size: 13px; color: var(--text-light); font-weight: 500; }
+
+        /* ── INVITE DURATION ROW ── */
+        .invite-duration-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 4px; }
+
+        /* ── RESPONSIVE ── */
+        @media(max-width:600px) {
+            .login-card { padding: 32px 20px; }
+            .card { padding: 18px; }
+            .share-link-row { flex-direction: column; }
+            .share-link-row button { width: 100%; }
+            .week-grid { grid-template-columns: 34px repeat(7, 1fr); }
+            .phone-field select { width: 90px; padding: 13px 4px; font-size: 11px; }
+            .modal { padding: 20px 16px; margin: auto; }
+            .modal-overlay { align-items: flex-start; padding-top: 40px; }
+            .profile-dropdown { right: -10px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     LOADING OVERLAY
+══════════════════════════════════════ -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-logo">📅</div>
+    <div class="loading-title">Calgo</div>
+    <div class="loading-subtitle" id="loadingMessage">Loading…</div>
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════ -->
+<div id="loginScreen" class="login-screen hidden">
+    <div class="login-card">
+        <div class="logo-icon">📅</div>
+        <h1>Calgo</h1>
+        <p class="subtitle">Let's Go!</p>
+        <button class="oauth-btn" onclick="signInWithGoogle()">
+            <svg viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Continue with Google
+        </button>
+        <div class="divider"><span>or</span></div>
+        <input type="text" id="guestName" placeholder="Your Name">
+        <div class="phone-field">
+            <select id="loginCountryCode">
+                <option value="+966">🇸🇦 +966</option>
+                <option value="+971">🇦🇪 +971</option>
+                <option value="+965">🇰🇼 +965</option>
+                <option value="+974">🇶🇦 +974</option>
+                <option value="+973">🇧🇭 +973</option>
+                <option value="+968">🇴🇲 +968</option>
+                <option value="+962">🇯🇴 +962</option>
+                <option value="+20">🇪🇬 +20</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+            </select>
+            <input type="tel" id="guestPhone" placeholder="5xxxxxxxx">
+        </div>
+        <label class="remember-me-row">
+            <input type="checkbox" id="rememberMeCheckbox" checked>
+            <span>Remember me on this device</span>
+        </label>
+        <button class="btn-primary" onclick="guestLogin()">Continue as Guest</button>
+        <p style="margin-top:14px;font-size:11px;color:#94a3b8;">Data stored locally in your browser</p>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════ -->
+<div id="mainApp" class="app hidden">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <h2>📅 Calgo</h2>
+        <div class="user-chip" onclick="toggleProfileMenu(event)">
+            <div class="avatar" id="navAvatar"></div>
+            <span id="navUserName" style="font-weight:600;font-size:13px;"></span>
+            <span style="font-size:10px;color:var(--text-light);">▼</span>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="dropdown-header">
+                    <div class="dropdown-user-name"  id="dropdownUserName"></div>
+                    <div class="dropdown-user-phone" id="dropdownUserPhone"></div>
+                </div>
+                <div class="dropdown-item" onclick="event.stopPropagation();showTab('profile')">👤 My Profile &amp; Friends</div>
+                <div class="dropdown-item" onclick="event.stopPropagation();showTab('calendar')">📅 Calendar</div>
+                <div class="dropdown-item" onclick="event.stopPropagation();showTab('bookings')">📋 Bookings</div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-item danger" onclick="event.stopPropagation();logout()">🚪 Log Out</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install App Bar -->
+    <div class="install-bar" id="installBar" style="display:none;">
+        <button class="install-btn" onclick="installApp()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Add to Home Screen
+        </button>
+    </div>
+
+    <!-- ── PROFILE TAB ── -->
+    <div id="profileTab">
+        <div class="card">
+            <div class="profile-header">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar" id="profileAvatarEl" onclick="document.getElementById('avatarFileInput').click()">👤</div>
+                    <div class="profile-avatar-edit-btn"              onclick="document.getElementById('avatarFileInput').click()">📷</div>
+                    <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="handleAvatarUpload(this)">
+                </div>
+                <div class="profile-name"  id="profileName"></div>
+                <div class="profile-phone" id="profilePhone"></div>
+            </div>
+
+            <!-- Friends Section -->
+            <div style="margin-bottom:18px;">
+                <div class="friends-title">
+                    👥 My Friends
+                    <span id="friendsCount" style="font-size:12px;color:var(--text-light);font-weight:400;"></span>
+                    <button onclick="$('addFriendBox').classList.toggle('hidden')"
+                        style="margin-left:auto;width:auto;padding:5px 13px;font-size:12px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;cursor:pointer;font-weight:700;">
+                        + Add Friend
+                    </button>
+                </div>
+                <!-- Add Friend Panel -->
+                <div id="addFriendBox" class="hidden" style="background:#f8fafc;border-radius:14px;border:2px dashed var(--border);padding:14px;margin-bottom:12px;">
+                    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">Add a Friend</div>
+                    
+                    <!-- URL Paste -->
+                    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+                        <input type="text" id="addFriendUrlInput" placeholder="Paste friend's Calgo link here..." style="margin:0;flex:1;min-width:180px;font-size:12px;padding:10px;" onkeydown="if(event.key==='Enter') processFriendUrlInput()">
+                        <button onclick="processFriendUrlInput()" style="width:auto;padding:10px 16px;margin:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;">
+                            Add
+                        </button>
+                    </div>
+                    
+                    <div style="display:flex;gap:7px;margin-bottom:10px;">
+                        <button onclick="startCameraQrScanner()" style="flex:1;padding:10px;background:#eef2ff;color:var(--primary);border:2px solid var(--border);border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;">
+                            📸 Scan QR
+                        </button>
+                        <button onclick="document.getElementById('qrImageUploadInput').click()" style="flex:1;padding:10px;background:#eef2ff;color:var(--primary);border:2px solid var(--border);border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;">
+                            🖼️ Upload QR
+                        </button>
+                        <input type="file" id="qrImageUploadInput" accept="image/*" class="hidden" onchange="processUploadedQrImage(this)">
+                    </div>
+                    
+                    <div id="qrScannerContainer" style="display:none;margin-bottom:10px;border-radius:12px;overflow:hidden;border:2px solid var(--primary);"></div>
+                    <button id="cancelQrScannerBtn" onclick="stopCameraQrScanner()" class="hidden" style="width:100%;padding:8px;background:#fee2e2;color:var(--danger);border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;margin-bottom:10px;">Cancel Scan</button>
+
+                    <div id="contactPickerContainer" style="display:none;">
+                        <button onclick="openDeviceContacts()" style="width:100%;padding:10px;background:#f1f5f9;color:var(--text);border:2px solid var(--border);border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            📱 Import from Phone Contacts
+                        </button>
+                    </div>
+                    <script>
+                        if ('contacts' in navigator && 'ContactsManager' in window) {
+                            document.getElementById('contactPickerContainer').style.display = 'block';
+                        }
+                    </script>
+                </div>
+                <div id="friendsList"></div>
+            </div>
+
+            <!-- Notification Permissions -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:14px;font-weight:700;">🔔 Booking Reminders</div>
+                <div id="notifPermissionBadge" class="notif-badge default" onclick="requestNotificationPermission()" title="Click to enable booking reminders">Enable Notifications</div>
+            </div>
+
+            <div class="separator"></div>
+
+            <!-- Share / QR Box -->
+            <div class="share-box">
+                <h4>🔗 Share Your Calendar</h4>
+                <p class="share-subtitle">Friends who scan this QR are added to your friends list automatically</p>
+                <div id="qrcode"></div>
+                <button class="whatsapp-share-btn" onclick="shareViaWhatsApp()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Share via WhatsApp
+                </button>
+                <div class="share-link-row">
+                    <input type="text" id="shareLink" readonly>
+                    <button class="btn-primary" onclick="copyShareLink()" style="width:auto;padding:11px 18px;">📋 Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CALENDAR TAB ── -->
+    <div id="calendarTab" class="hidden">
+        <div class="action-row">
+            <button class="action-btn ab-invite" onclick="openSingleInviteModal()">👤 Invite Friend</button>
+            <button class="action-btn ab-group"  onclick="openGroupInviteModal()">👥 Invite Group</button>
+            <button class="action-btn ab-import" onclick="importFromGoogleCalendar()">📥 Import</button>
+            <button class="action-btn ab-export" onclick="exportToGoogleCalendar()">📤 Export</button>
+            <button class="action-btn ab-recurring" onclick="openRecurringModal()">🔁 Recurring</button>
+        </div>
+        <div class="card">
+            <div class="cal-toolbar">
+                <div class="cal-nav">
+                    <button onclick="navigateCalendar(-1)">◀</button>
+                    <button class="btn-today" onclick="goToToday()" title="Go to today">◉</button>
+                    <button onclick="navigateCalendar(1)">▶</button>
+                </div>
+                <div class="cal-title" id="calTitle"></div>
+            </div>
+            <div class="view-switcher">
+                <button onclick="setCalendarView('day')"   id="view-day">📆 Day</button>
+                <button onclick="setCalendarView('week')"  id="view-week">🗓 Week</button>
+                <button onclick="setCalendarView('month')" id="view-month" class="active">📅 Month</button>
+            </div>
+            <div id="calView"></div>
+            <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;font-size:12px;flex-wrap:wrap;">
+                <span><span style="display:inline-block;width:11px;height:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>Available</span>
+                <span><span style="display:inline-block;width:11px;height:11px;background:#fef2f2;border:1px solid #fecaca;border-radius:3px;margin-right:4px;vertical-align:middle;"></span><span style="color:var(--danger);font-weight:600;">Busy/Blocked</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── BOOKINGS TAB ── -->
+    <div id="bookingsTab" class="hidden">
+        <div class="card">
+            <h3>📥 Incoming Requests</h3>
+            <div id="incomingBookings"></div>
+        </div>
+        <div class="card">
+            <h3>📤 Outgoing Requests</h3>
+            <div id="outgoingBookings"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PUBLIC VIEW
+══════════════════════════════════════ -->
+<div id="publicView" class="app hidden">
+    <div class="public-banner">
+        <div class="public-avatar" id="publicUserAvatar">👤</div>
+        <div>
+            <div class="public-user-name"     id="publicUserName"></div>
+            <div class="public-user-subtitle">Book an appointment below</div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="cal-toolbar">
+            <div class="cal-nav">
+                <button onclick="navigateCalendar(-1)">◀</button>
+                <button class="btn-today" onclick="goToToday()" title="Go to today">◉</button>
+                <button onclick="navigateCalendar(1)">▶</button>
+            </div>
+            <div class="cal-title" id="pubTitle"></div>
+        </div>
+        <div class="view-switcher">
+            <button onclick="setCalendarView('day')"   id="pub-view-day">📆 Day</button>
+            <button onclick="setCalendarView('week')"  id="pub-view-week">🗓 Week</button>
+            <button onclick="setCalendarView('month')" id="pub-view-month" class="active">📅 Month</button>
+        </div>
+        <div id="pubCalView"></div>
+        <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;font-size:12px;flex-wrap:wrap;">
+            <span><span style="display:inline-block;width:11px;height:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:3px;margin-right:4px;vertical-align:middle;"></span>Available</span>
+            <span><span style="display:inline-block;width:11px;height:11px;background:#fef2f2;border:1px solid #fecaca;border-radius:3px;margin-right:4px;vertical-align:middle;"></span><span style="color:var(--danger);font-weight:600;">Busy</span></span>
+        </div>
+    </div>
+    <div style="text-align:center;margin-top:18px;">
+        <button class="btn-primary" onclick="window.location.href=window.location.pathname" style="width:auto;padding:13px 30px;">📅 Get Your Own Calendar</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: Single Invite
+══════════════════════════════════════ -->
+<div id="singleInviteModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('singleInviteModal')">
+    <div class="modal">
+        <h3>👤 Invite a Friend</h3>
+        <div class="modal-field">
+            <label>Friend's WhatsApp Number</label>
+            <div class="phone-field" style="margin:0;">
+                <select id="singleInviteCountryCode">
+                    <option value="966">🇸🇦 +966</option><option value="971">🇦🇪 +971</option>
+                    <option value="965">🇰🇼 +965</option><option value="974">🇶🇦 +974</option>
+                    <option value="20">🇪🇬 +20</option>  <option value="1">🇺🇸 +1</option>
+                    <option value="44">🇬🇧 +44</option>
+                </select>
+                <input type="tel" id="singleInvitePhone" placeholder="5xxxxxxxx" style="margin:0;">
+            </div>
+        </div>
+        <div class="modal-field"><label>Suggested Date</label><input type="date" id="singleInviteDate" style="margin:0;"></div>
+        <div class="modal-field">
+            <label>Duration</label>
+            <div class="invite-duration-row" id="singleInviteDurationPicker">
+                <div class="duration-chip" data-minutes="30"  onclick="selectInviteDuration('single',30)">30 min</div>
+                <div class="duration-chip active" data-minutes="60" onclick="selectInviteDuration('single',60)">1 hr</div>
+                <div class="duration-chip" data-minutes="90"  onclick="selectInviteDuration('single',90)">1.5 hr</div>
+                <div class="duration-chip" data-minutes="120" onclick="selectInviteDuration('single',120)">2 hr</div>
+                <div class="duration-chip" data-minutes="180" onclick="selectInviteDuration('single',180)">3 hr</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:9px;">
+            <div class="modal-field" style="flex:1;"><label>From</label><input type="time" id="singleInviteStart" value="10:00" style="margin:0;" oninput="recalculateInviteEndTime('single')"></div>
+            <div class="modal-field" style="flex:1;"><label>To</label>  <input type="time" id="singleInviteEnd"   value="11:00" style="margin:0;"></div>
+        </div>
+        <div class="modal-field"><label>Message (optional)</label><textarea id="singleInviteNote" rows="2" style="margin:0;" placeholder="Let's meet!"></textarea></div>
+        <div class="modal-actions">
+            <button class="whatsapp-btn" onclick="sendSingleInviteViaWhatsApp()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Send via WhatsApp
+            </button>
+            <button class="booking-status-btn calendar" onclick="addSingleInviteToCalendar()" style="flex:1;padding:13px;font-size:13px;border-radius:13px;">📅 Calendar</button>
+            <button class="btn-cancel"                  onclick="closeModal('singleInviteModal')" style="flex:1;padding:13px;font-size:13px;border-radius:13px;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: Group Invite
+══════════════════════════════════════ -->
+<div id="groupInviteModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('groupInviteModal')">
+    <div class="modal">
+        <h3>👥 Invite Group</h3>
+        <div class="modal-field"><label>Suggested Date</label><input type="date" id="groupInviteDate" style="margin:0;"></div>
+        <div class="modal-field">
+            <label>Duration</label>
+            <div class="invite-duration-row" id="groupInviteDurationPicker">
+                <div class="duration-chip" data-minutes="30"  onclick="selectInviteDuration('group',30)">30 min</div>
+                <div class="duration-chip active" data-minutes="60" onclick="selectInviteDuration('group',60)">1 hr</div>
+                <div class="duration-chip" data-minutes="90"  onclick="selectInviteDuration('group',90)">1.5 hr</div>
+                <div class="duration-chip" data-minutes="120" onclick="selectInviteDuration('group',120)">2 hr</div>
+                <div class="duration-chip" data-minutes="180" onclick="selectInviteDuration('group',180)">3 hr</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:9px;">
+            <div class="modal-field" style="flex:1;"><label>From</label><input type="time" id="groupInviteStart" value="10:00" style="margin:0;" oninput="recalculateInviteEndTime('group')"></div>
+            <div class="modal-field" style="flex:1;"><label>To</label>  <input type="time" id="groupInviteEnd"   value="11:00" style="margin:0;"></div>
+        </div>
+        <div class="modal-field"><label>Message (optional)</label><textarea id="groupInviteNote" rows="2" style="margin:0;" placeholder="You're invited!"></textarea></div>
+        <div class="separator" style="margin:14px 0;"></div>
+        <div class="modal-field">
+            <label>Add Phone Number</label>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:nowrap;overflow:hidden;">
+                <div class="phone-field" style="margin:0;flex:1;min-width:0;overflow:hidden;">
+                    <select id="groupInviteCountryCode" style="margin:0;width:80px;flex-shrink:0;padding:10px 3px;font-size:11px;">
+                        <option value="966">🇸🇦 +966</option><option value="971">🇦🇪 +971</option>
+                        <option value="965">🇰🇼 +965</option><option value="974">🇶🇦 +974</option>
+                        <option value="20">🇪🇬 +20</option>  <option value="1">🇺🇸 +1</option>
+                        <option value="44">🇬🇧 +44</option>
+                    </select>
+                    <input type="tel" id="groupInvitePhone" placeholder="5xxxxxxxx" style="margin:0;min-width:0;" onkeydown="if(event.key==='Enter') addContactToGroupList()">
+                </div>
+                <button onclick="addContactToGroupList()" style="width:38px;height:38px;padding:0;margin:0;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;">+</button>
+            </div>
+        </div>
+        <div id="groupInviteProgress" class="hidden progress-wrapper">
+            <div class="progress-bar"><div class="progress-fill" id="groupInviteProgressFill" style="width:0%"></div></div>
+            <div class="progress-label" id="groupInviteProgressLabel"></div>
+        </div>
+        <div class="group-contact-list" id="groupContactList"></div>
+        <div class="modal-actions" style="margin-top:12px;">
+            <button class="whatsapp-btn" onclick="sendGroupInviteToAll()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Send to All
+            </button>
+            <button class="btn-cancel" onclick="closeModal('groupInviteModal')" style="flex:1;padding:13px;font-size:13px;border-radius:13px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: Export to Google Calendar
+══════════════════════════════════════ -->
+<div id="exportModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('exportModal')">
+    <div class="modal">
+        <h3>📤 Export to Google Calendar</h3>
+        <p style="font-size:13px;color:var(--text-light);text-align:center;margin-bottom:14px;">Select which events to export:</p>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button onclick="toggleAllExportCheckboxes(true)"  style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#eef2ff;color:var(--primary);border:none;cursor:pointer;font-weight:700;">Select All</button>
+            <button onclick="toggleAllExportCheckboxes(false)" style="flex:1;margin:0;padding:8px;font-size:12px;border-radius:9px;background:#f1f5f9;color:var(--text-light);border:none;cursor:pointer;font-weight:700;">Deselect All</button>
+        </div>
+        <div id="exportEventList" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;"></div>
+        <div class="modal-actions" style="margin-top:16px;">
+            <button class="btn-primary" onclick="executeExport()" style="flex:2;">📤 Export Selected</button>
+            <button class="btn-cancel"  onclick="closeModal('exportModal')" style="flex:1;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: Booking Form
+══════════════════════════════════════ -->
+<div id="bookingModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('bookingModal')">
+    <div class="modal">
+        <h3>📅 Book a Slot</h3>
+        <div class="modal-field"><label>Your Name</label><input type="text" id="bookingName" style="margin:0;" placeholder="Your name"></div>
+        <div class="modal-field">
+            <label>Your WhatsApp Number</label>
+            <div class="phone-field" style="margin:0;">
+                <select id="bookingCountryCode" style="margin:0;">
+                    <option value="966">🇸🇦 +966</option><option value="971">🇦🇪 +971</option>
+                    <option value="965">🇰🇼 +965</option><option value="974">🇶🇦 +974</option>
+                    <option value="20">🇪🇬 +20</option>  <option value="1">🇺🇸 +1</option>
+                    <option value="44">🇬🇧 +44</option>
+                </select>
+                <input type="tel" id="bookingPhone" placeholder="5xxxxxxxx" style="margin:0;">
+            </div>
+        </div>
+        <div class="modal-field"><label>Date</label><input type="date" id="bookingDate" style="margin:0;"></div>
+        <div class="modal-field">
+            <label>Duration</label>
+            <div class="duration-picker-row" id="bookingDurationPicker">
+                <div class="duration-chip" data-minutes="30"  onclick="selectBookingDuration(30)">30 min</div>
+                <div class="duration-chip active" data-minutes="60" onclick="selectBookingDuration(60)">1 hr</div>
+                <div class="duration-chip" data-minutes="90"  onclick="selectBookingDuration(90)">1.5 hr</div>
+                <div class="duration-chip" data-minutes="120" onclick="selectBookingDuration(120)">2 hr</div>
+                <div class="duration-chip" data-minutes="180" onclick="selectBookingDuration(180)">3 hr</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:9px;">
+            <div class="modal-field" style="flex:1;"><label>From</label><input type="time" id="bookingStart" style="margin:0;" oninput="recalculateBookingEndTime()"></div>
+            <div class="modal-field" style="flex:1;"><label>To</label>  <input type="time" id="bookingEnd"   style="margin:0;"></div>
+        </div>
+        <div class="modal-field"><label>Note (optional)</label><textarea id="bookingNote" rows="2" style="margin:0;" placeholder="Add a note…"></textarea></div>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="submitBooking()" style="flex:2;">✅ Confirm Booking</button>
+            <button class="btn-cancel"  onclick="closeModal('bookingModal')" style="flex:1;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: Booking Confirmation
+══════════════════════════════════════ -->
+<div id="bookingConfirmModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('bookingConfirmModal')">
+    <div class="modal" style="text-align:center;">
+        <div style="font-size:52px;margin-bottom:12px;" id="bookingConfirmIcon">⏳</div>
+        <h3 style="margin-bottom:12px;" id="bookingConfirmTitle">Booking Request Sent!</h3>
+        <div id="bookingConfirmMessage" style="font-size:15px;line-height:1.6;margin-bottom:20px;"></div>
+        <div class="modal-actions" style="flex-direction:column;gap:9px;">
+            <button class="whatsapp-btn" id="notifyOwnerBtn" onclick="notifyOwnerViaWhatsApp()" style="display:none;width:100%;justify-content:center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Notify Host via WhatsApp
+            </button>
+            <button class="btn-primary" onclick="closeModal('bookingConfirmModal')" style="width:100%;">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: Recurring Busy Slots
+══════════════════════════════════════ -->
+<div id="recurringModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('recurringModal')">
+    <div class="modal">
+        <h3>🔁 Recurring Busy Slots</h3>
+        <p style="font-size:13px;color:var(--text-light);text-align:center;margin-bottom:14px;">Block the same time slot every week automatically</p>
+        <div class="modal-field">
+            <label>Repeat on these days</label>
+            <div class="recurrence-day-grid" id="recurrenceDayGrid">
+                <div class="recurrence-day-chip" data-day="0" onclick="toggleRecurrenceDay(0)">Su</div>
+                <div class="recurrence-day-chip" data-day="1" onclick="toggleRecurrenceDay(1)">Mo</div>
+                <div class="recurrence-day-chip" data-day="2" onclick="toggleRecurrenceDay(2)">Tu</div>
+                <div class="recurrence-day-chip" data-day="3" onclick="toggleRecurrenceDay(3)">We</div>
+                <div class="recurrence-day-chip" data-day="4" onclick="toggleRecurrenceDay(4)">Th</div>
+                <div class="recurrence-day-chip" data-day="5" onclick="toggleRecurrenceDay(5)">Fr</div>
+                <div class="recurrence-day-chip" data-day="6" onclick="toggleRecurrenceDay(6)">Sa</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:9px;">
+            <div class="modal-field" style="flex:1;"><label>From</label><input type="time" id="recurringStart" value="09:00" style="margin:0;" oninput="updateRecurrencePreview()"></div>
+            <div class="modal-field" style="flex:1;"><label>To</label><input type="time" id="recurringEnd" value="10:00" style="margin:0;" oninput="updateRecurrencePreview()"></div>
+        </div>
+        <div class="modal-field">
+            <label>Label (optional)</label>
+            <input type="text" id="recurringLabel" placeholder="e.g. Team standup" style="margin:0;">
+        </div>
+        <div class="modal-field">
+            <label>Apply for how many weeks ahead?</label>
+            <select id="recurringWeeksAhead" style="margin:0;" onchange="updateRecurrencePreview()">
+                <option value="4">4 weeks</option>
+                <option value="8" selected>8 weeks</option>
+                <option value="12">12 weeks</option>
+                <option value="24">24 weeks</option>
+            </select>
+        </div>
+        <div class="recurrence-preview" id="recurrencePreview">Select days and time to preview…</div>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="applyRecurringBusySlots()" style="flex:2;">🔁 Apply Recurring Slots</button>
+            <button class="btn-cancel" onclick="closeModal('recurringModal')" style="flex:1;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   STORAGE MODULE
+   Wraps localStorage with a consistent key prefix and JSON serialization.
+══════════════════════════════════════ */
+const Storage = {
+    PREFIX: 'fc_',
+    getRaw:         (key)       => { try { return JSON.parse(localStorage.getItem('fc_' + key) || 'null'); } catch(e) { return null; } },
+    setRaw:         (key, val)  => localStorage.setItem('fc_' + key, JSON.stringify(val)),
+    getUsers:       ()          => Storage.getRaw('users')       || {},
+    setUsers:       (users)     => Storage.setRaw('users', users),
+    getBookings:    ()          => Storage.getRaw('bookings')    || [],
+    setBookings:    (list)      => Storage.setRaw('bookings', list),
+    getBlocks:      ()          => Storage.getRaw('blocks')      || [],
+    setBlocks:      (list)      => Storage.setRaw('blocks', list),
+    getFriends:     (uid)       => Storage.getRaw('fr_' + uid)   || [],
+    setFriends:     (uid, f)    => Storage.setRaw('fr_' + uid, f),
+    getCurrentUser: ()          => Storage.getRaw('cur'),
+    setCurrentUser: (user)      => Storage.setRaw('cur', user),
+};
+
+/* ══════════════════════════════════════
+   APP STATE
+══════════════════════════════════════ */
+let currentUser         = null;   // Logged-in user object
+let visitedUser         = null;   // Profile being viewed publicly
+let currentView         = 'month';
+let currentDate         = new Date();
+let groupContactList    = [];
+let bookingTargetUserId = null;
+
+/* ══════════════════════════════════════
+   DOM UTILITIES
+══════════════════════════════════════ */
+
+/** Shorthand for getElementById */
+const $ = id => document.getElementById(id);
+
+/** Show a toast notification for 3 seconds */
+function showToast(message) {
+    const toastEl = $('toast');
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 3000);
+}
+
+/** Format a Date object to YYYY-MM-DD */
+function formatDateToISO(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+/** Parse "HH:MM" into fractional hours (e.g. "09:30" → 9.5) */
+function parseTimeToHours(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h + m / 60;
+}
+
+/** Generate a short unique ID */
+function generateUniqueId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+/** Return the base URL without query string or hash */
+function getBaseUrl() {
+    return window.location.href.split('?')[0].split('#')[0];
+}
+
+/** Build a shareable profile URL */
+function buildShareUrl(userId) {
+    return getBaseUrl() + '?user=' + encodeURIComponent(userId);
+}
+
+/** Hide a modal */
+function closeModal(modalId) {
+    $(modalId).classList.add('hidden');
+}
+
+/** Read a phone number input, stripping leading zeros */
+function getPhoneNumberValue(elementId) {
+    return $(elementId).value.trim().replace(/^0+/, '');
+}
+
+/** Format hour + minute to 12-hour AM/PM string */
+function formatTimeAmPm(hour, minute = 0) {
+    const amPm        = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    const displayMin  = ':' + minute.toString().padStart(2, '0');
+    return `${displayHour}${displayMin} ${amPm}`;
+}
+
+/** Build a Google Calendar datetime string (e.g. 20250101T100000) */
+function buildGoogleCalendarDateTime(dateStr, timeStr) {
+    return (dateStr + 'T' + timeStr + ':00').replace(/[-:]/g, '');
+}
+
+/* ══════════════════════════════════════
+   FIREBASE SETUP
+══════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyBHyVe-MuG8Ryi0uN61przLAoqHmwdkcTE",
+    authDomain:        "scheduleit-fb644.firebaseapp.com",
+    projectId:         "scheduleit-fb644",
+    storageBucket:     "scheduleit-fb644.firebasestorage.app",
+    messagingSenderId: "943676899675",
+    appId:             "1:943676899675:web:d0c36662a70af29b301a7e",
+    measurementId:     "G-L58H3JLC2E"
+};
+let isFirebaseReady = false;
+let firestoreDb     = null;
+
+function initializeFirebase() {
+    try {
+        if (typeof firebase === 'undefined') return;
+        firebase.initializeApp(FIREBASE_CONFIG);
+        isFirebaseReady = FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
+        if (!isFirebaseReady) return;
+        firestoreDb = firebase.firestore();
+        firebase.auth().onAuthStateChanged(handleFirebaseAuthStateChange);
+    } catch (e) { console.warn('Firebase init skipped:', e.message); }
+}
+
+async function handleFirebaseAuthStateChange(firebaseUser) {
+    if (!firebaseUser) return;
+    if ($('mainApp').classList.contains('hidden')) {
+    showLoadingOverlay('Restoring your session…');
+    }
+    const uid = firebaseUser.uid;
+    let userData = Storage.getUsers()[uid];
+    if (firestoreDb && !userData) {
+        try { const doc = await firestoreDb.collection('users').doc(uid).get(); if (doc.exists) userData = doc.data(); } catch(e) {}
+    }
+    if (!userData) userData = buildUserFromFirebase(firebaseUser);
+    persistUser(userData);
+    currentUser = userData;
+    Storage.setCurrentUser(currentUser);
+    if (visitedUser && visitedUser.id !== currentUser.id) {
+        hideLoadingOverlay();
+        addFriend(visitedUser); renderCalendar();
+    } else if (!$('loginScreen').classList.contains('hidden')) {
+        enterApp();                   // Enter immediately
+        syncCurrentUserData();        // Sync in background
+    } else {
+        hideLoadingOverlay();   // App already loaded — dismiss any lingering overlay
+        syncCurrentUserData();
+    }
+}
+
+function buildUserFromFirebase(firebaseUser) {
+    return {
+        id: firebaseUser.uid, name: firebaseUser.displayName || 'User',
+        phone: firebaseUser.phoneNumber || firebaseUser.email || firebaseUser.uid,
+        provider: 'google', avatar: firebaseUser.photoURL || null,
+        email: firebaseUser.email, firebaseUid: firebaseUser.uid, created: new Date().toISOString()
+    };
+}
+initializeFirebase();
+
+/* ══════════════════════════════════════
+   DATA PERSISTENCE
+══════════════════════════════════════ */
+
+function persistUser(user) {
+    const users = Storage.getUsers(); users[user.id] = user; Storage.setUsers(users);
+    if (firestoreDb) firestoreDb.collection('users').doc(user.id).set(user).catch(console.error);
+}
+
+function persistBooking(booking) {
+    const bookings = Storage.getBookings();
+    const idx = bookings.findIndex(b => b.id === booking.id);
+    if (idx >= 0) bookings[idx] = booking; else bookings.push(booking);
+    Storage.setBookings(bookings);
+    if (firestoreDb) {
+        firestoreDb.collection('bookings').doc(booking.id).set(booking).catch(err => {
+            console.error('Firestore booking write failed:', err);
+            showToast('⚠️ Booking saved locally — sync to cloud failed. Check your connection.');
+        });
+    } else {
+        showToast('⚠️ No cloud connection — booking saved locally only. Ask owner to refresh.');
+    }
+}
+
+function persistBlock(block) {
+    const blocks = Storage.getBlocks();
+    const idx = blocks.findIndex(b => b.id === block.id);
+    if (idx >= 0) blocks[idx] = block; else blocks.push(block);
+    Storage.setBlocks(blocks);
+    if (firestoreDb) firestoreDb.collection('blocks').doc(block.id).set(block).catch(console.error);
+}
+
+function deleteBlock(blockId) {
+    Storage.setBlocks(Storage.getBlocks().filter(b => b.id !== blockId));
+    if (firestoreDb) firestoreDb.collection('blocks').doc(blockId).delete().catch(console.error);
+}
+
+async function syncCurrentUserData() {
+    if (!currentUser || !firestoreDb) return;
+    try {
+        // Fetch owned bookings, blocks, and friend list in parallel
+        const [bookingSnap, blockSnap, friendSnap] = await Promise.all([
+            firestoreDb.collection('bookings').where('owner', '==', currentUser.id).get(),
+            firestoreDb.collection('blocks').where('owner', '==', currentUser.id).get(),
+            firestoreDb.collection('friends').doc(currentUser.id).get()
+        ]);
+
+        // Fetch outgoing bookings by bookerId (reliable) and normalized phone (fallback)
+        const outgoingDocs = await fetchOutgoingBookingsFromFirestore();
+
+        mergeFirestoreBookings(bookingSnap, outgoingDocs);
+        mergeFirestoreBlocks(blockSnap);
+        await mergeFriendsFromFirestore(friendSnap);
+        if (currentView) renderCalendar();
+        if ($('bookingsTab') && !$('bookingsTab').classList.contains('hidden')) loadBookings();
+        if ($('profileTab')  && !$('profileTab').classList.contains('hidden'))  renderFriends();
+    } catch (e) { console.error('Sync error', e); }
+}
+
+/**
+ * Fetch outgoing bookings from Firestore using bookerId (primary) and
+ * normalized phone (fallback for old records). Deduplicates by doc ID.
+ * @returns {Promise<Array<FirebaseFirestore.DocumentSnapshot>>}
+ */
+async function fetchOutgoingBookingsFromFirestore() {
+    const queries = [];
+
+    // Primary: query by bookerId — works for all users including Google
+    if (currentUser.id) {
+        queries.push(
+            firestoreDb.collection('bookings').where('bookerId', '==', currentUser.id).get()
+        );
+    }
+
+    // Fallback: normalized phone — for bookings made before bookerId was stored
+    const normalizedPhone = normalizePhoneNumber(currentUser.phone);
+    if (normalizedPhone && !normalizedPhone.includes('@')) {
+        queries.push(
+            firestoreDb.collection('bookings').where('bookerPhone', '==', normalizedPhone).get()
+        );
+    }
+
+    const snaps = await Promise.all(queries);
+    const seen  = new Set();
+    const docs  = [];
+    snaps.forEach(snap => {
+        snap.forEach(doc => {
+            if (!seen.has(doc.id)) { seen.add(doc.id); docs.push(doc); }
+        });
+    });
+    return docs;
+}
+
+function mergeFirestoreBookings(ownedSnap, outgoingDocs) {
+    const bookingMap = {};
+    Storage.getBookings().forEach(b  => bookingMap[b.id] = b);
+    ownedSnap.forEach(doc            => bookingMap[doc.id] = doc.data());
+    outgoingDocs.forEach(doc         => bookingMap[doc.id] = doc.data());
+    Storage.setBookings(Object.values(bookingMap));
+}
+
+function mergeFirestoreBlocks(blockSnap) {
+    const map = {};
+    Storage.getBlocks().forEach(b => map[b.id] = b);
+    blockSnap.forEach(d => map[d.id] = d.data());
+    Storage.setBlocks(Object.values(map));
+}
+
+async function mergeFriendsFromFirestore(friendSnap) {
+    if (!friendSnap.exists) return;
+    const friendList = friendSnap.data().list || [];
+    Storage.setFriends(currentUser.id, friendList);
+    const users = Storage.getUsers();
+    for (const friend of friendList) {
+        if (!users[friend.id]) {
+            const doc = await firestoreDb.collection('users').doc(friend.id).get();
+            if (doc.exists) users[friend.id] = doc.data();
+        }
+    }
+    Storage.setUsers(users);
+}
+
+/* ══════════════════════════════════════
+   AUTHENTICATION
+══════════════════════════════════════ */
+
+async function signInWithGoogle() {
+    if (!isFirebaseReady) { showToast('⚠️ OAuth not configured — using guest login'); guestLogin(); return; }
+    showLoadingOverlay('Signing in with Google…');
+    try {
+        const result       = await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        const firebaseUser = result.user;
+        showLoadingOverlay('Setting up your calendar…');
+        let userData       = Storage.getUsers()[firebaseUser.uid];
+        if (firestoreDb) {
+            try { const doc = await firestoreDb.collection('users').doc(firebaseUser.uid).get(); if (doc.exists) userData = doc.data(); } catch(e) {}
+        }
+        if (!userData) userData = buildUserFromFirebase(firebaseUser);
+        userData.name = firebaseUser.displayName || 'User';
+        if (firebaseUser.photoURL) userData.avatar = firebaseUser.photoURL;
+        saveRememberMePreference();
+        persistUser(userData);
+        currentUser = userData; Storage.setCurrentUser(currentUser);
+        enterApp();                           // Enter immediately — no waiting for sync
+        showToast('✅ Signed in as ' + userData.name);
+        syncCurrentUserData();                // Sync Firestore in the background
+    } catch (e) {
+        hideLoadingOverlay();
+        console.error('Auth error:', e);
+        if (e.code === 'auth/popup-closed-by-user') showToast('⚠️ Sign-in cancelled');
+        else showToast('❌ Sign-in failed: ' + (e.message || 'Unknown error'));
+    }
+}
+
+function guestLogin() {
+    if (!confirm("Data is saved temporarily on this device.\n\nLogin with Google to save your data permanently.\n\nContinue as guest?")) return;
+    const name  = $('guestName').value.trim();
+    const phone = getPhoneNumberValue('guestPhone');
+    if (!name || !phone) { showToast('❌ Enter name and phone'); return; }
+    saveRememberMePreference();
+    createOrUpdateAndLoginUser(name, $('loginCountryCode').value + phone, 'guest');
+}
+
+function createOrUpdateAndLoginUser(name, phone, provider) {
+    const normalizedPhone = normalizePhoneNumber(phone);
+    const users           = Storage.getUsers();
+    let userId            = Object.entries(users).find(([, u]) => normalizePhoneNumber(u.phone) === normalizedPhone)?.[0];
+    if (!userId) {
+        userId = generateUniqueId();
+        const newUser = { id: userId, name, phone: normalizedPhone, provider, avatar: null, created: new Date().toISOString() };
+        persistUser(newUser); currentUser = newUser;
+    } else {
+        currentUser = users[userId]; currentUser.name = name; persistUser(currentUser);
+    }
+    Storage.setCurrentUser(currentUser); enterApp();
+}
+
+/**
+ * Normalize a phone number to a consistent format (no leading '+', digits only prefix).
+ * Handles: "+96655512345" → "96655512345", "96655512345" → "96655512345"
+ * Google email addresses are returned as-is (cannot be normalized).
+ * @param {string} phone
+ * @returns {string}
+ */
+function normalizePhoneNumber(phone) {
+    if (!phone) return '';
+    const stripped = phone.trim().replace(/^\+/, '');
+    return stripped;
+}
+
+function logout() {
+    currentUser = null;
+    clearRememberedSession();
+    if (isFirebaseReady) firebase.auth().signOut();
+    location.href = getBaseUrl();
+}
+
+/* ══════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════ */
+
+function toggleProfileMenu(event) {
+    event.stopPropagation();
+    $('profileDropdown').classList.toggle('open');
+}
+document.addEventListener('click', () => { const dd = $('profileDropdown'); if (dd) dd.classList.remove('open'); });
+
+function showTab(tabName) {
+    $('profileDropdown')?.classList.remove('open');
+    ['profile', 'calendar', 'bookings'].forEach(name => $(name + 'Tab')?.classList.add('hidden'));
+    $(tabName + 'Tab')?.classList.remove('hidden');
+    if (tabName === 'profile')  renderProfile();
+    if (tabName === 'calendar') renderCalendar();
+    if (tabName === 'bookings') loadBookingsWithSync();
+}
+
+/* ══════════════════════════════════════
+   AVATAR UPLOAD
+══════════════════════════════════════ */
+
+function handleAvatarUpload(inputEl) {
+    const file = inputEl.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { currentUser.avatar = e.target.result; persistUser(currentUser); renderProfile(); updateNavBar(); showToast('✅ Photo updated'); };
+    reader.readAsDataURL(file);
+}
+
+/* ══════════════════════════════════════
+   FRIENDS
+══════════════════════════════════════ */
+
+async function openDeviceContacts() {
+    if (!('contacts' in navigator && 'ContactsManager' in window)) {
+        showToast('❌ Not supported on this device/browser');
+        return;
+    }
+    try {
+        const props = ['name', 'tel'];
+        const opts  = { multiple: true };
+        const contacts = await navigator.contacts.select(props, opts);
+        
+        if (!contacts.length) return;
+        
+        showLoadingOverlay('Importing contacts…');
+        let addedCount = 0;
+        
+        for (const contact of contacts) {
+            if (!contact.tel || !contact.tel.length) continue;
+            const rawPhone = contact.tel[0];
+            const digitsOnly = rawPhone.replace(/\D/g, '');
+            if (digitsOnly.length < 5) continue;
+            
+            const users = Storage.getUsers();
+            let foundUser = Object.values(users).find(u => {
+                if (!u.phone) return false;
+                return u.phone.replace(/\D/g, '') === digitsOnly;
+            });
+            
+            if (!foundUser && firestoreDb) {
+                const snap1 = await firestoreDb.collection('users').where('phone', '==', digitsOnly).limit(1).get();
+                if (!snap1.empty) {
+                    foundUser = snap1.docs[0].data();
+                } else {
+                    const snap2 = await firestoreDb.collection('users').where('phone', '==', '+' + digitsOnly).limit(1).get();
+                    if (!snap2.empty) foundUser = snap2.docs[0].data();
+                }
+            }
+            
+            if (foundUser && foundUser.id !== currentUser.id) {
+                addFriend(foundUser);
+                addedCount++;
+            }
+        }
+        
+        hideLoadingOverlay();
+        renderFriends();
+        $('addFriendBox').classList.add('hidden');
+        
+        if (addedCount > 0) {
+            showToast(`✅ Imported ${addedCount} friend(s)!`);
+        } else {
+            showToast('⚠️ No contacts found who are using Calgo');
+        }
+    } catch (e) {
+        hideLoadingOverlay();
+        console.error('Contact Picker Error:', e);
+        if (e.name !== 'TypeError' && e.name !== 'AbortError' && e.name !== 'NotAllowedError') {
+             showToast('❌ Error reading contacts');
+        }
+    }
+}
+
+let html5QrCode = null;
+
+async function processFriendUrlInput() {
+    const urlString = $('addFriendUrlInput').value.trim();
+    if (!urlString) { showToast('❌ Please paste a valid link'); return; }
+    
+    const userId = extractUserIdFromUrl(urlString);
+    if (!userId) { showToast('❌ Invalid Calgo link'); return; }
+    
+    await fetchAndAddFriendById(userId);
+    $('addFriendUrlInput').value = '';
+}
+
+function extractUserIdFromUrl(urlString) {
+    try {
+        const url = new URL(urlString);
+        return url.searchParams.get('user');
+    } catch (e) {
+        const match = urlString.match(/user=([^&]+)/);
+        return match ? decodeURIComponent(match[1]) : null;
+    }
+}
+
+async function fetchAndAddFriendById(targetUserId) {
+    if (!targetUserId) return;
+    if (currentUser && targetUserId === currentUser.id) {
+        showToast("⚠️ You can't add yourself as a friend!");
+        return;
+    }
+
+    showLoadingOverlay('Finding user...');
+    try {
+        let foundUser = Storage.getUsers()[targetUserId];
+        
+        if (!foundUser && firestoreDb) {
+            const doc = await firestoreDb.collection('users').doc(targetUserId).get();
+            if (doc.exists) {
+                foundUser = doc.data();
+                const users = Storage.getUsers();
+                users[targetUserId] = foundUser;
+                Storage.setUsers(users);
+            }
+        }
+        
+        hideLoadingOverlay();
+        
+        if (foundUser) {
+            addFriend(foundUser);
+            renderFriends();
+            $('addFriendBox').classList.add('hidden');
+            showToast(`✅ ${foundUser.name} added to friends!`);
+        } else {
+            showToast('❌ User not found');
+        }
+    } catch (e) {
+        hideLoadingOverlay();
+        console.error('Error fetching friend:', e);
+        showToast('❌ Error adding friend');
+    }
+}
+
+async function startCameraQrScanner() {
+    const container = $('qrScannerContainer');
+    const cancelBtn = $('cancelQrScannerBtn');
+    
+    container.style.display = 'block';
+    cancelBtn.classList.remove('hidden');
+    
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qrScannerContainer");
+    }
+    
+    try {
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText, decodedResult) => {
+                stopCameraQrScanner();
+                handleScannedQrResult(decodedText);
+            },
+            (errorMessage) => {
+                // Ignore routine scanning errors
+            }
+        );
+    } catch (err) {
+        console.error("QR Scanner init error:", err);
+        showToast("❌ Could not start camera. Please check permissions.");
+        stopCameraQrScanner();
+    }
+}
+
+async function stopCameraQrScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        try {
+            await html5QrCode.stop();
+        } catch (err) {
+            console.error("Error stopping scanner:", err);
+        }
+    }
+    $('qrScannerContainer').style.display = 'none';
+    $('cancelQrScannerBtn').classList.add('hidden');
+}
+
+async function processUploadedQrImage(fileInput) {
+    if (!fileInput.files || fileInput.files.length === 0) return;
+    const file = fileInput.files[0];
+    
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qrScannerContainer");
+    }
+    
+    showLoadingOverlay('Scanning image...');
+    try {
+        const decodedText = await html5QrCode.scanFile(file, true);
+        hideLoadingOverlay();
+        fileInput.value = '';
+        handleScannedQrResult(decodedText);
+    } catch (err) {
+        hideLoadingOverlay();
+        console.error("QR Scan File Error:", err);
+        showToast("❌ No QR code found in this image");
+        fileInput.value = '';
+    }
+}
+
+function handleScannedQrResult(decodedText) {
+    const userId = extractUserIdFromUrl(decodedText);
+    if (userId) {
+        fetchAndAddFriendById(userId);
+    } else {
+        showToast("❌ This is not a valid Calgo QR code");
+    }
+}
+
+function addFriend(friendUser) {
+    if (!currentUser || currentUser.id === friendUser.id) return;
+    const friends = Storage.getFriends(currentUser.id);
+    if (!friends.find(f => f.id === friendUser.id)) {
+        friends.push({ id: friendUser.id, addedAt: new Date().toISOString() });
+        Storage.setFriends(currentUser.id, friends);
+        if (firestoreDb) firestoreDb.collection('friends').doc(currentUser.id).set({ list: friends }).catch(() => {});
+    }
+}
+
+function getResolvedFriends() {
+    if (!currentUser) return [];
+    const users = Storage.getUsers();
+    return Storage.getFriends(currentUser.id).map(f => users[f.id]).filter(Boolean);
+}
+
+function removeFriend(friendId) {
+    const updated = Storage.getFriends(currentUser.id).filter(f => f.id !== friendId);
+    Storage.setFriends(currentUser.id, updated);
+    if (firestoreDb) firestoreDb.collection('friends').doc(currentUser.id).set({ list: updated }).catch(() => {});
+    renderFriends(); showToast('Removed from friends');
+}
+
+function renderFriends() {
+    const container = $('friendsList');
+    const friends   = getResolvedFriends();
+    $('friendsCount').textContent = friends.length ? `(${friends.length})` : '';
+    if (!friends.length) {
+        container.innerHTML = '<div class="no-friends-message">No friends yet — share your QR code and friends are added automatically 👆</div>';
+        return;
+    }
+    const avatarHtml = u => u.avatar ? `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;">` : u.name.charAt(0).toUpperCase();
+    container.innerHTML = `<div class="friends-scroll">${friends.map(u => `
+        <div class="friend-chip">
+            <div class="friend-avatar">${avatarHtml(u)}</div>
+            <div class="friend-name">${u.name}</div>
+            <div class="friend-action-btns">
+                <button class="friend-btn friend-btn-view"   onclick="window.open('${buildShareUrl(u.id)}','_blank')">📅</button>
+                <button class="friend-btn friend-btn-invite" onclick="prefillInviteForFriend('${u.id}')">📨</button>
+                <button class="friend-btn friend-btn-remove" onclick="removeFriend('${u.id}')">✕</button>
+            </div>
+        </div>`).join('')}</div>`;
+}
+
+function prefillInviteForFriend(userId) {
+    const user = Storage.getUsers()[userId]; if (!user) return;
+    openSingleInviteModal();
+    const CODES = ['966','971','965','974','973','968','962','20','1','44'].sort((a,b) => b.length - a.length);
+    let phone = user.phone.replace(/^\+/, '');
+    for (const code of CODES) {
+        if (phone.startsWith(code)) { $('singleInviteCountryCode').value = code; $('singleInvitePhone').value = phone.slice(code.length); break; }
+    }
+}
+
+/* ══════════════════════════════════════
+   PROFILE RENDERING
+══════════════════════════════════════ */
+
+function renderProfile() {
+    if (!currentUser) return;
+    $('profileName').textContent  = currentUser.name;
+    $('profilePhone').textContent = '📱 ' + currentUser.phone;
+    updateNavBar();
+    const setAv = el => {
+        if (currentUser.avatar) el.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
+        else el.textContent = currentUser.name.charAt(0).toUpperCase();
+    };
+    setAv($('profileAvatarEl')); setAv($('navAvatar'));
+    const url = buildShareUrl(currentUser.id);
+    $('shareLink').value = url;
+    const qr = $('qrcode'); qr.innerHTML = '';
+    try { new QRCode(qr, { text: url, width: 155, height: 155, colorDark: '#4f46e5', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); }
+    catch(e) { qr.innerHTML = '<div style="padding:14px;color:#999;">QR unavailable</div>'; }
+    renderFriends();
+    renderNotificationPermissionBadge();
+}
+
+function updateNavBar() {
+    if (!currentUser) return;
+    $('navUserName').textContent       = currentUser.name;
+    $('dropdownUserName').textContent  = currentUser.name;
+    $('dropdownUserPhone').textContent = currentUser.phone;
+    const av = $('navAvatar');
+    if (currentUser.avatar) av.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
+    else av.textContent = currentUser.name.charAt(0).toUpperCase();
+}
+
+function copyShareLink() {
+    const url = $('shareLink').value;
+    navigator.clipboard.writeText(url).then(() => showToast('📋 Copied!')).catch(() => { $('shareLink').select(); document.execCommand('copy'); showToast('📋 Copied!'); });
+}
+
+function shareViaWhatsApp() {
+    window.open(`https://wa.me/?text=${encodeURIComponent('📅 Book a slot with me!\n\n' + buildShareUrl(currentUser.id))}`, '_blank');
+}
+
+/* ══════════════════════════════════════
+   ENTER APP / PUBLIC VIEW
+══════════════════════════════════════ */
+
+function enterApp() {
+    $('loginScreen').classList.add('hidden');
+    $('mainApp').classList.remove('hidden');
+    hideLoadingOverlay();
+    updateNavBar(); showTab('calendar');
+    processPendingCalendarAdd();
+    initNotificationReminders();
+}
+
+function processPendingCalendarAdd() {
+    const pending = Storage.getRaw('pending_add');
+    if (!pending) return;
+    Storage.setRaw('pending_add', null);
+    const exists = Storage.getBlocks().find(b => b.owner === currentUser.id && b.date === pending.dt && b.start === pending.st && b.end === pending.en);
+    if (!exists) {
+        persistBlock({ id: generateUniqueId(), owner: currentUser.id, date: pending.dt, start: pending.st, end: pending.en, label: pending.title, created: new Date().toISOString() });
+        showToast('✅ Added to Calgo Calendar!'); renderCalendar();
+    } else { showToast('⚠️ Slot already busy in Calgo'); }
+}
+
+function enterPublicView(user) {
+    visitedUser = user;
+    const savedSession = Storage.getCurrentUser();
+    if (savedSession && savedSession.id && savedSession.id !== user.id) {
+        const savedUserData = Storage.getUsers()[savedSession.id];
+        if (savedUserData) { currentUser = savedUserData; addFriend(user); }
+    }
+    $('loginScreen').classList.add('hidden');
+    hideLoadingOverlay();
+    $('publicView').classList.remove('hidden');
+    $('publicUserName').textContent = user.name;
+    const avatarEl = $('publicUserAvatar');
+    avatarEl.innerHTML = user.avatar ? `<img src="${user.avatar}">` : user.name.charAt(0).toUpperCase();
+    renderCalendar();
+}
+
+/* ══════════════════════════════════════
+   CALENDAR — DATA QUERIES
+══════════════════════════════════════ */
+
+function getBookingsForDate(dateStr, userId, statusFilter) {
+    return Storage.getBookings().filter(b => b.owner === userId && b.date === dateStr && (!statusFilter || b.status === statusFilter));
+}
+
+function getBlocksForDate(dateStr, userId) {
+    return Storage.getBlocks().filter(b => b.owner === userId && b.date === dateStr);
+}
+
+function isHourBusy(dateStr, hour, userId) {
+    const confirmedOrPendingBookings = [
+        ...getBookingsForDate(dateStr, userId, 'accepted'),
+        ...getBookingsForDate(dateStr, userId, 'pending')
+    ];
+    const manualBlocks = getBlocksForDate(dateStr, userId);
+    return confirmedOrPendingBookings.some(b => hour >= parseTimeToHours(b.start) && hour < parseTimeToHours(b.end)) ||
+           manualBlocks.some(b               => hour >= parseTimeToHours(b.start) && hour < parseTimeToHours(b.end));
+}
+
+function isDayBusy(dateStr, userId) {
+    const hasAcceptedBooking = getBookingsForDate(dateStr, userId, 'accepted').length > 0;
+    const hasPendingBooking  = getBookingsForDate(dateStr, userId, 'pending').length > 0;
+    const hasManualBlock     = getBlocksForDate(dateStr, userId).length > 0;
+    return hasAcceptedBooking || hasPendingBooking || hasManualBlock;
+}
+
+/* ══════════════════════════════════════
+   CALENDAR — NAVIGATION & RENDERING
+══════════════════════════════════════ */
+
+function setCalendarView(viewName) {
+    currentView = viewName;
+    const prefix = visitedUser ? 'pub-' : '';
+    document.querySelectorAll('.view-switcher button').forEach(btn => btn.classList.remove('active'));
+    $(prefix + 'view-' + viewName)?.classList.add('active');
+    renderCalendar();
+}
+
+function navigateCalendar(direction) {
+    if      (currentView === 'day')  currentDate.setDate(currentDate.getDate() + direction);
+    else if (currentView === 'week') currentDate.setDate(currentDate.getDate() + direction * 7);
+    else                             currentDate.setMonth(currentDate.getMonth() + direction);
+    renderCalendar();
+}
+
+function goToToday() { currentDate = new Date(); renderCalendar(); showToast('📅 Today'); }
+
+function renderCalendar() {
+    const userId   = visitedUser ? visitedUser.id : currentUser.id;
+    const isPublic = !!visitedUser;
+    const viewEl   = $(isPublic ? 'pubCalView' : 'calView');
+    const titleEl  = $(isPublic ? 'pubTitle'   : 'calTitle');
+    if      (currentView === 'day')  renderDayView(viewEl, titleEl, userId, isPublic);
+    else if (currentView === 'week') renderWeekView(viewEl, titleEl, userId, isPublic);
+    else                             renderMonthView(viewEl, titleEl, userId, isPublic);
+}
+
+function selectDayFromMonthView(day) {
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    setCalendarView('day');
+}
+
+/* ── DAY VIEW ── */
+function renderDayView(container, titleEl, userId, isPublic) {
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    titleEl.textContent = `${DAYS[currentDate.getDay()]}, ${currentDate.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}`;
+    const dateStr = formatDateToISO(currentDate);
+    let html = '<div class="day-grid">';
+    for (let hour = 0; hour < 24; hour++) html += buildDayViewHourRow(dateStr, hour, userId, isPublic);
+    container.innerHTML = html + '</div>';
+}
+
+function buildDayViewHourRow(dateStr, hour, userId, isPublic) {
+    const manualBlock  = !isPublic && getBlocksForDate(dateStr, userId).find(b => hour >= parseTimeToHours(b.start) && hour < parseTimeToHours(b.end));
+    const isBookedBusy = !manualBlock && isHourBusy(dateStr, hour, userId);
+    const isPast       = isHourInPast(dateStr, hour);
+    const time24       = hour.toString().padStart(2, '0') + ':00';
+    const timeLabel    = formatTimeAmPm(hour);
+    const isNight      = (hour < 6 || hour >= 18);
+    const icon         = isNight ? '🌑' : '☀️';
+    const nightClass   = isNight ? ' night-time' : '';
+
+    // Past hours — show "Passed" label, no interaction
+    if (isPast && !manualBlock && !isBookedBusy) {
+        return `<div class="hour-row${nightClass} past-time"><div class="hour-label">${timeLabel}</div><div class="hour-slot past-time${nightClass}"><span class="slot-label past-label">Passed ⏳</span></div></div>`;
+    }
+    if (manualBlock && !isPublic) return buildBlockedDayRow(dateStr, hour, timeLabel, nightClass, manualBlock);
+    if (isBookedBusy) return `<div class="hour-row${nightClass}"><div class="hour-label">${timeLabel}</div><div class="hour-slot busy${nightClass}"><span class="slot-label">⛔ Busy</span></div></div>`;
+    if (!isPublic)    return `<div class="hour-row${nightClass}"><div class="hour-label">${timeLabel}</div><div class="hour-slot${nightClass}" onclick="toggleSlotBusy('${dateStr}',${hour})" style="cursor:pointer;" title="Click to mark Busy"><span class="slot-label">${icon} Available</span></div></div>`;
+    return `<div class="hour-row${nightClass}"><div class="hour-label">${timeLabel}</div><div class="hour-slot${nightClass}" onclick="openBookingModal('${dateStr}','${time24}','${userId}')"><span class="slot-label">${icon} Available</span><span class="slot-action">Book</span></div></div>`;
+}
+
+function buildBlockedDayRow(dateStr, hour, timeLabel, nightClass, block) {
+    const label = block.label || '';
+    return `<div class="hour-row${nightClass}">
+  <div class="hour-label">${timeLabel}</div>
+  <div class="hour-slot blocked${nightClass}" style="flex-direction:column;align-items:flex-start;gap:4px;cursor:pointer;" onclick="toggleSlotBusy('${dateStr}',${hour})" title="Click to mark Available">
+    <span style="font-weight:700;">⛔ Busy</span>
+    <input class="slot-tag-input" value="${label}" placeholder="+ add label (e.g. wedding)"
+      onclick="event.stopPropagation()"
+      onchange="saveSlotLabel('${dateStr}',${hour},this)"
+      onkeydown="if(event.key==='Enter'){saveSlotLabel('${dateStr}',${hour},this);event.preventDefault();}">
+  </div>
+</div>`;
+}
+
+/* ── WEEK VIEW ── */
+function renderWeekView(container, titleEl, userId, isPublic) {
+    const sow = new Date(currentDate); sow.setDate(currentDate.getDate() - currentDate.getDay());
+    const eow = new Date(sow); eow.setDate(sow.getDate() + 6);
+    titleEl.textContent = `${sow.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${eow.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+    const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let html = '<div class="week-grid"><div></div>';
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(sow); d.setDate(sow.getDate() + i);
+        const isToday = d.toDateString() === new Date().toDateString();
+        html += `<div class="week-day-header" style="${isToday ? 'color:var(--primary);font-weight:800;' : ''}">${DAYS[i]}<br><small>${d.getDate()}</small></div>`;
+    }
+    for (let hour = 0; hour < 24; hour++) {
+        const ampm    = hour >= 12 ? 'PM' : 'AM';
+        const dh      = hour % 12 || 12;
+        const isNight = (hour < 6 || hour >= 18);
+        const nc      = isNight ? ' night-time' : '';
+        html += `<div class="week-hour-label${nc}">${dh}${ampm}</div>`;
+        for (let j = 0; j < 7; j++) {
+            const d   = new Date(sow); d.setDate(sow.getDate() + j);
+            const ds  = formatDateToISO(d);
+            const busy    = isHourBusy(ds, hour, userId);
+            const isToday = d.toDateString() === new Date().toDateString();
+            let cls = 'week-cell' + nc;
+            if (busy)    cls += ' busy';
+            if (isToday) cls += ' today';
+            let oc = '', txt = '';
+            const isPast = isHourInPast(ds, hour);
+            if (isPast && !busy) {
+                html += `<div class="${cls} past-time"><span style="font-size:9px;color:#94a3b8;">⏳</span></div>`;
+            } else if (!isPublic) {
+                txt = busy ? '⛔' : (isNight ? '🌑' : '☀️');
+                oc  = `onclick="toggleSlotBusy('${ds}',${hour})" title="${busy ? 'Click to mark Available' : 'Click to mark Busy'}"`;
+                html += `<div class="${cls}" ${oc}>${txt}</div>`;
+            } else {
+                txt = busy ? 'Busy' : '';
+                if (!busy) oc = `onclick="openBookingModal('${ds}','${hour.toString().padStart(2,'0')}:00','${userId}')"`;
+                html += `<div class="${cls}" ${oc}>${txt}</div>`;
+            }
+        }
+    }
+    container.innerHTML = html + '</div>';
+}
+
+/* ── MONTH VIEW ── */
+function renderMonthView(container, titleEl, userId, isPublic) {
+    titleEl.textContent = currentDate.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+    const firstDay  = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDay   = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    const leadDays  = firstDay.getDay();
+    const today     = new Date();
+    const DAYS      = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let html = '<div class="month-grid">';
+    DAYS.forEach(d => html += `<div class="month-day-header">${d}</div>`);
+    for (let i = 0; i < leadDays; i++) html += '<div class="month-cell other-month"></div>';
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+        const dt  = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+        const ds  = formatDateToISO(dt);
+        const busy       = isDayBusy(ds, userId);
+        const isToday    = dt.toDateString() === today.toDateString();
+        const isPastDay  = isDayFullyInPast(ds);
+        let cls = 'month-cell';
+        if (busy)    cls += ' busy';
+        if (isToday) cls += ' today';
+        if (isPastDay && !isToday) cls += ' past-day';
+        const statusLabel = busy ? 'Busy' : (isPastDay && !isToday ? 'Past' : '');
+        const clickHandler = isPastDay && !isToday ? '' : `onclick="selectDayFromMonthView(${d})"`;
+        html += `<div class="${cls}" ${clickHandler}><div class="day-number">${d}</div><div class="day-status">${statusLabel}</div></div>`;
+    }
+    container.innerHTML = html + '</div>';
+}
+
+/* ══════════════════════════════════════
+   SLOT TOGGLING
+══════════════════════════════════════ */
+
+function toggleSlotBusy(dateStr, hour) {
+    const start    = hour.toString().padStart(2, '0') + ':00';
+    const end      = (hour + 1).toString().padStart(2, '0') + ':00';
+    const existing = Storage.getBlocks().find(b => b.owner === currentUser.id && b.date === dateStr && b.start === start && b.end === end);
+    if (existing) { deleteBlock(existing.id); showToast('✅ ' + start + ' marked Available'); }
+    else { persistBlock({ id: generateUniqueId(), owner: currentUser.id, date: dateStr, start, end, label: '', created: new Date().toISOString() }); showToast('⛔ ' + start + ' marked Busy — tap again to undo'); }
+    renderCalendar();
+}
+
+function saveSlotLabel(dateStr, hour, inputEl) {
+    const start    = hour.toString().padStart(2, '0') + ':00';
+    const end      = (hour + 1).toString().padStart(2, '0') + ':00';
+    const existing = Storage.getBlocks().find(b => b.owner === currentUser.id && b.date === dateStr && b.start === start && b.end === end);
+    if (existing) { existing.label = inputEl.value.trim(); persistBlock(existing); }
+}
+
+/* ══════════════════════════════════════
+   IMPORT / EXPORT CALENDAR
+══════════════════════════════════════ */
+
+function importFromGoogleCalendar() {
+    window.open('https://calendar.google.com/calendar/r', '_blank');
+    showToast('📥 Opening Google Calendar — copy your events manually');
+}
+
+function exportToGoogleCalendar() {
+    const bookings = Storage.getBookings().filter(b => b.owner === currentUser.id && b.status === 'accepted');
+    const blocks   = Storage.getBlocks().filter(b => b.owner === currentUser.id);
+    if (!bookings.length && !blocks.length) { showToast('No events to export'); return; }
+    const rows = [
+        ...bookings.map(b => ({ id: b.id, label: `📅 Appt – ${b.bookerName}`, meta: `${b.date}  ${b.start}–${b.end}`, date: b.date, start: b.start, end: b.end })),
+        ...blocks.map(b   => ({ id: b.id, label: `⛔ ${b.label || 'Busy'}`,   meta: `${b.date}  ${b.start}–${b.end}`, date: b.date, start: b.start, end: b.end }))
+    ].sort((a, b) => a.date.localeCompare(b.date));
+    $('exportEventList').innerHTML = rows.map(r => `
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border-radius:11px;border:1px solid var(--border);cursor:pointer;font-size:13px;">
+            <input type="checkbox" class="export-checkbox" data-date="${r.date}" data-start="${r.start}" data-end="${r.end}" data-label="${encodeURIComponent(r.label)}" checked style="width:16px;height:16px;margin:0;padding:0;border:none;flex-shrink:0;cursor:pointer;">
+            <span style="flex:1;"><strong>${r.label}</strong><br><span style="color:var(--text-light);font-size:11px;">${r.meta}</span></span>
+        </label>`).join('');
+    $('exportModal').classList.remove('hidden');
+}
+
+function executeExport() {
+    const checked = document.querySelectorAll('.export-checkbox:checked');
+    if (!checked.length) { showToast('❌ Select at least one event'); return; }
+    closeModal('exportModal');
+    checked.forEach((cb, i) => setTimeout(() => {
+        const label = decodeURIComponent(cb.dataset.label);
+        const sf    = buildGoogleCalendarDateTime(cb.dataset.date, cb.dataset.start);
+        const ef    = buildGoogleCalendarDateTime(cb.dataset.date, cb.dataset.end);
+        window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(label)}&dates=${sf}/${ef}`, '_blank');
+    }, i * 800));
+    showToast(`📤 Exporting ${checked.length} event(s)…`);
+}
+
+function toggleAllExportCheckboxes(checked) {
+    document.querySelectorAll('.export-checkbox').forEach(cb => cb.checked = checked);
+}
+
+/* ══════════════════════════════════════
+   BOOKING MODAL
+══════════════════════════════════════ */
+
+function openBookingModal(date, startTime, targetUserId) {
+    bookingTargetUserId     = targetUserId || (visitedUser ? visitedUser.id : null);
+    $('bookingDate').value  = date;
+    $('bookingStart').value = startTime;
+    if (currentUser) {
+        $('bookingName').value  = currentUser.name;
+        $('bookingPhone').value = extractLocalPhoneNumber(currentUser.phone);
+    } else { $('bookingName').value = ''; $('bookingPhone').value = ''; }
+    $('bookingNote').value = '';
+    resetDurationPicker();
+    recalculateBookingEndTime();
+    $('bookingModal').classList.remove('hidden');
+}
+
+function extractLocalPhoneNumber(fullPhone) {
+    if (!fullPhone) return '';
+    if (fullPhone.includes('@')) return '';  // Google users have email as phone — leave field blank
+    const COUNTRY_CODES = ['966','971','965','974','973','968','962','20','1','44']
+        .sort((a, b) => b.length - a.length);
+    const digitsOnly = fullPhone.replace(/^\+/, '');
+    for (const code of COUNTRY_CODES) {
+        if (digitsOnly.startsWith(code)) return digitsOnly.slice(code.length);
+    }
+    return digitsOnly;
+}
+
+function submitBooking() {
+    const bookerName    = $('bookingName').value.trim();
+    const phoneNumber   = getPhoneNumberValue('bookingPhone');
+    const bookerPhone   = $('bookingCountryCode').value + phoneNumber;
+    const bookingDate   = $('bookingDate').value;
+    const bookingStart  = $('bookingStart').value;
+    const bookingEnd    = $('bookingEnd').value;
+    const bookingNote   = $('bookingNote').value.trim();
+    const targetOwnerId = resolveBookingTargetOwnerId();
+
+    if (!bookerName || !phoneNumber || !bookingDate || !bookingStart || !bookingEnd) { showToast('❌ Fill all fields'); return; }
+    if (bookingStart >= bookingEnd)      { showToast('❌ End time must be after start'); return; }
+    if (!targetOwnerId)                  { showToast('❌ Could not determine booking owner'); return; }
+    if (isDateInPast(bookingDate))       { showToast('⏳ Cannot book a date in the past'); return; }
+    if (isDateToday(bookingDate) && bookingStart < buildCurrentTimeString()) { showToast('⏳ Cannot book a time that has already passed'); return; }
+    if (hasTimeConflict(targetOwnerId, bookingDate, bookingStart, bookingEnd)) { showToast('⛔ That slot is already busy'); return; }
+
+    const newBooking = {
+        id:          generateUniqueId(),
+        owner:       targetOwnerId,
+        bookerId:    currentUser ? currentUser.id : null,   // Store booker's user ID for reliable outgoing lookup
+        bookerName,
+        bookerPhone: normalizePhoneNumber(bookerPhone),     // Normalize before storing
+        date:        bookingDate,
+        start:       bookingStart,
+        end:         bookingEnd,
+        note:        bookingNote,
+        status:      'pending',
+        created:     new Date().toISOString()
+    };
+    persistBooking(newBooking);
+    closeModal('bookingModal');
+    renderCalendar();
+    showBookingConfirmation(newBooking);
+}
+
+/**
+ * Determine the owner ID for the current booking context.
+ * Priority: explicit bookingTargetUserId > visitedUser > currentUser (self-booking).
+ * @returns {string|null}
+ */
+function resolveBookingTargetOwnerId() {
+    return bookingTargetUserId || (visitedUser ? visitedUser.id : (currentUser ? currentUser.id : null));
+}
+
+/**
+ * Build the current time as "HH:MM" string for past-time comparison.
+ * @returns {string}
+ */
+function buildCurrentTimeString() {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function hasTimeConflict(userId, date, startTime, endTime) {
+    const busyStatuses    = ['accepted', 'pending'];
+    const bookingConflict = Storage.getBookings().some(b =>
+        busyStatuses.includes(b.status) &&
+        b.owner === userId &&
+        b.date  === date   &&
+        startTime < b.end  &&
+        endTime   > b.start
+    );
+    const blockConflict = Storage.getBlocks().some(b =>
+        b.owner === userId &&
+        b.date  === date   &&
+        startTime < b.end  &&
+        endTime   > b.start
+    );
+    return bookingConflict || blockConflict;
+}
+
+/**
+ * Display the booking confirmation modal after a successful submission.
+ * @param {Object} booking - The newly created booking object
+ */
+function showBookingConfirmation(booking) {
+    const ownerName    = visitedUser ? visitedUser.name : (Storage.getUsers()[booking.owner]?.name || 'the host');
+    const ownerPhone   = Storage.getUsers()[booking.owner]?.phone || null;
+
+    $('bookingConfirmIcon').textContent  = '⏳';
+    $('bookingConfirmTitle').textContent = 'Booking Request Sent!';
+    $('bookingConfirmMessage').innerHTML =
+        `Your request was sent to <strong>${ownerName}</strong>.<br>` +
+        `<small style="color:var(--text-light);">📅 ${booking.date} &nbsp; 🕐 ${booking.start}–${booking.end}</small><br>` +
+        `<small style="color:#f59e0b;margin-top:6px;display:block;">⏳ Waiting for host to accept</small>`;
+
+    // Show WhatsApp notify button only if we have the owner's phone
+    const notifyBtn = $('notifyOwnerBtn');
+    if (ownerPhone && notifyBtn) {
+        notifyBtn.style.display = 'flex';
+        // Store on window for the onclick handler
+        window._pendingNotifyBooking = { booking, ownerPhone, ownerName };
+    } else if (notifyBtn) {
+        notifyBtn.style.display = 'none';
+    }
+
+    $('bookingConfirmModal').classList.remove('hidden');
+}
+
+/**
+ * Open WhatsApp to notify the calendar owner of the new booking request.
+ * Called from the "Notify Host via WhatsApp" button in the confirm modal.
+ */
+function notifyOwnerViaWhatsApp() {
+    const pending = window._pendingNotifyBooking;
+    if (!pending) return;
+    const { booking, ownerPhone, ownerName } = pending;
+    const cleanPhone = ownerPhone.replace(/^\+/, '');
+    const message    = buildOwnerNotificationMessage(booking, ownerName);
+    window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(message), '_blank');
+    const notifyBtn = $('notifyOwnerBtn');
+    if (notifyBtn) {
+        notifyBtn.textContent = '\u2705 Notification sent!';
+        notifyBtn.style.background = '#22c55e';
+        notifyBtn.onclick = null;
+    }
+    window._pendingNotifyBooking = null;   // BUG-B fix: clean up state
+}
+
+/**
+ * Build the WhatsApp notification message sent to the calendar owner.
+ * @param {Object} booking   - The pending booking object
+ * @param {string} ownerName - Display name of the owner
+ * @returns {string}
+ */
+function buildOwnerNotificationMessage(booking, ownerName) {
+    const calgoLink  = buildShareUrl(booking.owner);
+    const noteSection = booking.note ? '📝 Note: ' + booking.note + '\n' : '';
+    return 'Hi ' + ownerName + '! 👋\n\n' +
+        'You have a new booking request on Calgo:\n\n' +
+        '👤 From: ' + booking.bookerName + '\n' +
+        '📱 Phone: ' + booking.bookerPhone + '\n' +
+        '📅 Date: ' + booking.date + '\n' +
+        '🕐 Time: ' + booking.start + ' \u2013 ' + booking.end + '\n' +
+        noteSection +
+        '\nOpen your calendar to accept or reject:\n👉 ' + calgoLink;
+}
+
+/* ══════════════════════════════════════
+   BOOKINGS TAB
+══════════════════════════════════════ */
+
+function buildStatusBadgeHtml(status) {
+    const statusStyleMap = {
+        pending:  ['#fef3c7', '#92400e', '⏳ Pending'],
+        accepted: ['#dcfce7', '#166534', '✅ Accepted'],
+        rejected: ['#fee2e2', '#991b1b', '❌ Rejected']
+    };
+    const [bgColor, textColor, displayLabel] = statusStyleMap[status] || statusStyleMap.pending;
+    return `<span class="status-badge" style="background:${bgColor};color:${textColor};">${displayLabel}</span>`;
+}
+
+async function loadBookingsWithSync() {
+    loadBookingsFromLocalStorage();      // Render instantly from cache
+    await syncCurrentUserData();         // Pull latest from Firestore
+    loadBookingsFromLocalStorage();      // Re-render with fresh data
+}
+
+function loadBookings() {
+    loadBookingsFromLocalStorage();
+}
+
+function loadBookingsFromLocalStorage() {
+    const all              = Storage.getBookings();
+    const users            = Storage.getUsers();
+    const currentUserPhone = normalizePhoneNumber(currentUser.phone);
+
+    const incoming = all
+        .filter(b => b.owner === currentUser.id)
+        .sort((a, b) => new Date(b.created) - new Date(a.created));
+
+    const outgoing = all
+        .filter(b => isBookingMadeByCurrentUser(b, currentUserPhone))
+        .sort((a, b) => new Date(b.created) - new Date(a.created));
+
+    renderIncomingBookings(incoming);
+    renderOutgoingBookings(outgoing, users);
+}
+
+/**
+ * Determine if a booking was made by the currently logged-in user.
+ * Checks by bookerId (reliable) first, then falls back to normalized phone match.
+ * Handles both guest users (phone-based) and Google users (email-based phone field).
+ * @param {Object} booking          - The booking to check
+ * @param {string} normalizedPhone  - Current user's phone, already normalized
+ * @returns {boolean}
+ */
+function isBookingMadeByCurrentUser(booking, normalizedPhone) {
+    if (booking.bookerId && currentUser && booking.bookerId === currentUser.id) return true;
+    if (booking.bookerPhone && normalizePhoneNumber(booking.bookerPhone) === normalizedPhone) return true;
+    return false;
+}
+
+function renderIncomingBookings(bookings) {
+    const el = $('incomingBookings');
+    if (!bookings.length) { el.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span>No incoming requests yet<br><small style="margin-top:7px;display:block;">Share your calendar to get bookings!</small></div>'; return; }
+    el.innerHTML = bookings.map(buildIncomingBookingItemHtml).join('');
+}
+
+function buildIncomingBookingItemHtml(booking) {
+    const calendarBtn    = booking.status === 'accepted'
+        ? `<button class="booking-status-btn calendar" onclick="addBookingToCalendar('${booking.id}')">📅</button>`
+        : '';
+    const notifyBtn      = (booking.status === 'accepted' || booking.status === 'rejected')
+        ? `<button class="booking-status-btn" style="background:linear-gradient(135deg,#25D366,#128C7E);color:white;" onclick="notifyBookerOfResponse('${booking.id}')">📲 Notify</button>`
+        : '';
+    const itemExtraClass = booking.status === 'pending' ? ' pending-booking' : '';
+    let actionButtons;
+    if (booking.status === 'accepted') {
+        actionButtons = `<button class="booking-status-btn reject" onclick="respondToBooking('${booking.id}','rejected')">✕ Cancel</button>`;
+    } else if (booking.status === 'rejected') {
+        actionButtons = `<button class="booking-status-btn accept" onclick="respondToBooking('${booking.id}','accepted')">✓ Re-accept</button>`;
+    } else {
+        actionButtons =
+            `<button class="booking-status-btn accept" onclick="respondToBooking('${booking.id}','accepted')">✓ Accept</button>` +
+            `<button class="booking-status-btn reject" onclick="respondToBooking('${booking.id}','rejected')">✕ Reject</button>`;
+    }
+    return `<div class="booking-item${itemExtraClass}">` +
+        `<div class="booking-info">` +
+            `<div class="booking-name">👤 ${booking.bookerName} <span style="font-weight:400;color:var(--text-light);font-size:11px;">${booking.bookerPhone}</span></div>` +
+            `<div class="booking-meta">📅 ${booking.date} 🕐 ${booking.start}–${booking.end}${booking.note ? ' 📝 ' + booking.note : ''}</div>` +
+            buildStatusBadgeHtml(booking.status) +
+        `</div>` +
+        `<div class="booking-actions">${actionButtons}${calendarBtn}${notifyBtn}</div>` +
+    `</div>`;
+}
+
+function renderOutgoingBookings(bookings, users) {
+    const el = $('outgoingBookings');
+    if (!bookings.length) { el.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span>No outgoing requests yet</div>'; return; }
+    el.innerHTML = bookings.map(b => {
+        const calBtn = b.status === 'accepted' ? `<button class="booking-status-btn calendar" onclick="addBookingToCalendar('${b.id}')">📅</button>` : '';
+        return `<div class="booking-item"><div class="booking-info"><div class="booking-name">📅 With: ${users[b.owner]?.name || 'User'}</div><div class="booking-meta">📅 ${b.date} 🕐 ${b.start}–${b.end}</div>${buildStatusBadgeHtml(b.status)}</div><div class="booking-actions">${calBtn}</div></div>`;
+    }).join('');
+}
+
+function respondToBooking(bookingId, newStatus) {
+    const allBookings   = Storage.getBookings();
+    const targetBooking = allBookings.find(b => b.id === bookingId);
+    if (!targetBooking) return;
+
+    targetBooking.status      = newStatus;
+    targetBooking.respondedAt = new Date().toISOString();
+    persistBooking(targetBooking);
+
+    if (newStatus === 'accepted') syncBookingToCalendarBlock(targetBooking);
+    if (newStatus === 'rejected') removeLinkedCalendarBlock(targetBooking);
+
+    showToast(newStatus === 'accepted' ? '✅ Booking accepted' : '❌ Booking rejected');
+    loadBookings();
+    renderCalendar();
+}
+
+/**
+ * Open WhatsApp to notify the booker of their booking status.
+ * Called manually by the owner via the "📲 Notify" button in Incoming Requests.
+ * @param {string} bookingId - ID of the booking to notify about
+ */
+function notifyBookerOfResponse(bookingId) {
+    const booking = Storage.getBookings().find(b => b.id === bookingId);
+    if (!booking) return;
+    const ownerName  = currentUser ? currentUser.name : 'The host';
+    const cleanPhone = booking.bookerPhone.replace(/^\+/, '');
+    const statusMap  = {
+        accepted: { emoji: '\u2705', word: 'accepted' },
+        rejected: { emoji: '\u274C', word: 'rejected' },
+        pending:  { emoji: '\u23F3', word: 'is still reviewing' }
+    };
+    const { emoji, word } = statusMap[booking.status] || statusMap.pending;
+    const message = emoji + ' Hi ' + booking.bookerName + '!\n\n' +
+        ownerName + ' has ' + word + ' your booking request.\n\n' +
+        '\uD83D\uDCC5 Date: ' + booking.date + '\n' +
+        '\uD83D\uDD50 Time: ' + booking.start + ' \u2013 ' + booking.end + '\n\n' +
+        '\u2014 Calgo';
+    window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(message), '_blank');
+}
+
+function syncBookingToCalendarBlock(booking) {
+    const exists = Storage.getBlocks().find(b => b.owner === booking.owner && b.date === booking.date && b.start === booking.start && b.end === booking.end);
+    if (!exists) persistBlock({ id: generateUniqueId(), owner: booking.owner, date: booking.date, start: booking.start, end: booking.end, label: `Appt – ${booking.bookerName}`, created: new Date().toISOString() });
+}
+
+function removeLinkedCalendarBlock(booking) {
+    const linked = Storage.getBlocks().find(b => b.owner === booking.owner && b.date === booking.date && b.start === booking.start && b.end === booking.end && (b.label || '').startsWith('Appt –'));
+    if (linked) deleteBlock(linked.id);
+}
+
+function addBookingToCalendar(bookingId) {
+    const b = Storage.getBookings().find(b => b.id === bookingId); if (!b) return;
+    const title = encodeURIComponent(`Appt – ${b.bookerName}`);
+    const sf = buildGoogleCalendarDateTime(b.date, b.start);
+    const ef = buildGoogleCalendarDateTime(b.date, b.end);
+    window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(b.note || 'Calgo')}`, '_blank');
+    showToast('📅 Opening Calendar…');
+}
+
+/* ══════════════════════════════════════
+   SINGLE INVITE
+══════════════════════════════════════ */
+
+function openSingleInviteModal() {
+    $('singleInviteDate').value  = formatDateToISO(new Date());
+    $('singleInvitePhone').value = '';
+    $('singleInviteNote').value  = '';
+    resetInviteDurationPicker('single');
+    recalculateInviteEndTime('single');
+    $('singleInviteModal').classList.remove('hidden');
+}
+
+function buildInviteMessage(date, start, end, note) {
+    const [h, m]  = start.split(':').map(Number);
+    const time    = formatTimeAmPm(h, m);
+    const title   = encodeURIComponent(`Meeting with ${currentUser.name}`);
+    const sf      = buildGoogleCalendarDateTime(date, start);
+    const ef      = buildGoogleCalendarDateTime(date, end);
+    const gcal    = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(note || '')}`;
+    const calgoUrl = buildShareUrl(currentUser.id) + `&event=1&title=${title}&dt=${date}&st=${start}&en=${end}&note=${encodeURIComponent(note || '')}`;
+    return `You received an invitation from ${currentUser.name} 📅\n\nDate: ${date}\nTime: ${time}\n${note ? 'Note: ' + note + '\n' : ''}\nAdd to your calendar:\n👉 ${calgoUrl}\n\nOr open in Google Calendar:\n👉 ${gcal}\n\n— Sent via Calgo: https://king10asd.github.io/Calgo/`;
+}
+
+function sendSingleInviteViaWhatsApp() {
+    const cc    = $('singleInviteCountryCode').value;
+    const phone = getPhoneNumberValue('singleInvitePhone');
+    const date  = $('singleInviteDate').value;
+    const start = $('singleInviteStart').value;
+    const end   = $('singleInviteEnd').value;
+    const note  = $('singleInviteNote').value.trim();
+    if (!phone || !date || !start || !end) { showToast('❌ Fill all fields'); return; }
+    if (start >= end) { showToast('❌ End after start'); return; }
+    window.open(`https://wa.me/${cc + phone}?text=${encodeURIComponent(buildInviteMessage(date, start, end, note))}`, '_blank');
+    showToast('📨 Opening WhatsApp…');
+}
+
+function addSingleInviteToCalendar() {
+    const date = $('singleInviteDate').value, start = $('singleInviteStart').value, end = $('singleInviteEnd').value, note = $('singleInviteNote').value.trim();
+    if (!date || !start || !end) { showToast('❌ Fill date/time'); return; }
+    const title = encodeURIComponent(`Meeting – ${currentUser.name}`);
+    window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${buildGoogleCalendarDateTime(date, start)}/${buildGoogleCalendarDateTime(date, end)}&details=${encodeURIComponent(note || 'Calgo')}`, '_blank');
+    showToast('📅 Opening Calendar…');
+}
+
+/* ══════════════════════════════════════
+   GROUP INVITE
+══════════════════════════════════════ */
+
+function openGroupInviteModal() {
+    groupContactList = [];
+    $('groupInviteDate').value  = formatDateToISO(new Date());
+    $('groupInvitePhone').value = '';
+    $('groupInviteNote').value  = '';
+    $('groupInviteProgress').classList.add('hidden');
+    resetInviteDurationPicker('group');
+    recalculateInviteEndTime('group');
+    renderGroupContactList();
+    $('groupInviteModal').classList.remove('hidden');
+}
+
+function addContactToGroupList() {
+    const cc    = $('groupInviteCountryCode').value;
+    const phone = getPhoneNumberValue('groupInvitePhone');
+    if (!phone) { showToast('❌ Enter a number'); return; }
+    const full = cc + phone;
+    if (groupContactList.find(c => c.phone === full)) { showToast('⚠️ Already added'); return; }
+    groupContactList.push({ phone: full, displayPhone: '+' + full, sent: false });
+    $('groupInvitePhone').value = '';
+    renderGroupContactList();
+}
+
+function removeContactFromGroupList(phone) {
+    groupContactList = groupContactList.filter(c => c.phone !== phone);
+    renderGroupContactList(); updateGroupInviteProgress();
+}
+
+function renderGroupContactList() {
+    const el = $('groupContactList');
+    if (!groupContactList.length) {
+        el.innerHTML = '<div style="text-align:center;color:var(--text-light);font-size:13px;padding:12px;">No contacts yet — add numbers above</div>';
+        updateGroupInviteProgress(); return;
+    }
+    el.innerHTML = groupContactList.map(c => `
+        <div class="group-contact-row">
+            <div class="group-contact-avatar">📱</div>
+            <div class="group-contact-info"><div class="group-contact-phone">${c.displayPhone}</div></div>
+            <button class="group-send-btn ${c.sent ? 'done' : 'unsent'}" onclick="sendGroupInviteToOne('${c.phone}')" ${c.sent ? 'disabled' : ''}>
+                ${c.sent ? '✅ Sent!' : '▶ Send'}
+            </button>
+            ${!c.sent ? `<button class="group-remove-btn" onclick="removeContactFromGroupList('${c.phone}')">✕</button>` : ''}
+        </div>`).join('');
+    updateGroupInviteProgress();
+}
+
+function updateGroupInviteProgress() {
+    const total = groupContactList.length;
+    const sent  = groupContactList.filter(c => c.sent).length;
+    const el    = $('groupInviteProgress');
+    if (!total) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    $('groupInviteProgressFill').style.width  = `${(sent / total) * 100}%`;
+    $('groupInviteProgressLabel').textContent = `${sent} of ${total} sent`;
+}
+
+function sendGroupInviteToOne(phone) {
+    const date = $('groupInviteDate').value, start = $('groupInviteStart').value, end = $('groupInviteEnd').value, note = $('groupInviteNote').value.trim();
+    if (!date || !start || !end) { showToast('❌ Fill date/time first'); return; }
+    if (start >= end)            { showToast('❌ End after start'); return; }
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(buildInviteMessage(date, start, end, note))}`, '_blank');
+    const contact = groupContactList.find(c => c.phone === phone);
+    if (contact) contact.sent = true;
+    renderGroupContactList();
+}
+
+function sendGroupInviteToAll() {
+    if (!groupContactList.length) { showToast('❌ Add contacts first'); return; }
+    const date = $('groupInviteDate').value, start = $('groupInviteStart').value, end = $('groupInviteEnd').value, note = $('groupInviteNote').value.trim();
+    if (!date || !start || !end) { showToast('❌ Fill date/time first'); return; }
+    if (start >= end)            { showToast('❌ End after start'); return; }
+    const unsent = groupContactList.filter(c => !c.sent);
+    if (!unsent.length) { showToast('✅ All already sent!'); return; }
+    const msg = buildInviteMessage(date, start, end, note);
+    unsent.forEach((c, i) => setTimeout(() => { window.open(`https://wa.me/${c.phone}?text=${encodeURIComponent(msg)}`, '_blank'); c.sent = true; renderGroupContactList(); }, i * 700));
+    showToast(`📨 Sending to ${unsent.length}…`);
+}
+
+/* ══════════════════════════════════════
+   EVENT URL HANDLER (invitation links)
+══════════════════════════════════════ */
+
+function handleEventUrl(params) {
+    const title = params.get('title') || 'Meeting';
+    const date  = params.get('dt'), start = params.get('st'), end = params.get('en'), note = params.get('note') || '';
+    if (!date || !start) return;
+    const sf          = buildGoogleCalendarDateTime(date, start);
+    const ef          = buildGoogleCalendarDateTime(date, end);
+    const gcal        = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${sf}/${ef}&details=${encodeURIComponent(note)}`;
+    const icsContent  = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${title}\nDTSTART:${sf}\nDTEND:${ef}\nDESCRIPTION:${note}\nEND:VEVENT\nEND:VCALENDAR`;
+    const icsUrl      = `data:text/calendar;charset=utf8,${encodeURIComponent(icsContent)}`;
+    const inviter     = title.startsWith('Meeting with ') ? title.replace('Meeting with ', '') : 'a friend';
+    const displayTime = formatTimeAmPm(parseInt(start.split(':')[0]), parseInt(start.split(':')[1] || 0));
+    document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#f093fb 100%);padding:20px;font-family:sans-serif;">
+        <div style="background:white;padding:40px 30px;border-radius:24px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-width:400px;width:100%;">
+            <div style="font-size:50px;margin-bottom:15px;">📅</div>
+            <h2 style="margin:0 0 15px;font-size:20px;color:#1e293b;line-height:1.4;">You received an invitation from <strong>${inviter}</strong> on ${date} at ${displayTime}.<br><br>Shall I add this to your Calendar?</h2>
+            <div style="display:flex;gap:10px;margin-top:25px;">
+                <button onclick="document.getElementById('calOpts').style.display='block';this.style.display='none';document.getElementById('noBtn').style.display='none'" style="flex:1;background:#22c55e;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">Yes</button>
+                <button id="noBtn" onclick="window.location.href='https://king10asd.github.io/Calgo/'" style="flex:1;background:#ef4444;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">No</button>
+            </div>
+            <div id="calOpts" style="display:none;margin-top:15px;">
+                <p style="margin-bottom:10px;font-size:14px;color:#64748b;">Choose your calendar:</p>
+                <button onclick="addInvitationToCalgo('${encodeURIComponent(title)}','${date}','${start}','${end || start}')" style="display:block;width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;border:none;cursor:pointer;font-size:15px;">📅 Add to Calgo</button>
+                <a href="${gcal}" target="_blank" style="display:block;background:#4285F4;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;">Google Calendar</a>
+                <a href="${icsUrl}" download="meeting.ics" style="display:block;background:#1e293b;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;">Apple / Outlook</a>
+                <a href="https://king10asd.github.io/Calgo/" style="display:block;margin-top:20px;color:#6366f1;font-weight:bold;text-decoration:none;font-size:14px;">Try Calgo!</a>
+            </div>
+        </div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════
+   PWA INSTALL
+══════════════════════════════════════ */
+
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); deferredInstallPrompt = e;
+    const bar = $('installBar'); if (bar) bar.style.display = 'flex';
+});
+
+function installApp() {
+    if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(r => {
+            if (r.outcome === 'accepted') { showToast('✅ App installed!'); $('installBar').style.display = 'none'; }
+            else showToast('ℹ️ Install cancelled');
+            deferredInstallPrompt = null;
+        });
+    } else {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        showToast(isIOS ? '📲 Tap the Share button ↗ then "Add to Home Screen"' : '📲 Use your browser menu → "Add to Home Screen" or "Install App"');
+    }
+}
+if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    const bar = $('installBar'); if (bar) bar.style.display = 'flex';
+}
+
+/* ══════════════════════════════════════
+   APP INITIALIZATION
+══════════════════════════════════════ */
+
+async function init() {
+    const params      = new URLSearchParams(window.location.search);
+    const targetUid   = params.get('user');
+    const isEventLink = params.get('event');
+    const addToCalgo  = params.get('add_Calgo');
+
+    if (addToCalgo) {
+        Storage.setRaw('pending_add', { title: params.get('title'), dt: params.get('dt'), st: params.get('st'), en: params.get('en') });
+        window.history.replaceState({}, '', getBaseUrl());
+    } else if (isEventLink) {
+        // Event invite page — no loading overlay needed, renders its own UI
+        handleEventUrl(params); return;
+    }
+
+    showLoadingOverlay('Loading Calgo…');
+
+    if (targetUid) {
+        await initWithTargetUser(targetUid);
+    } else if (tryAutoLoginFromRememberedSession()) {
+        // Remembered session found — restore it directly
+        initFromSavedSession();
+    } else {
+        // No remembered session — show login screen
+        hideLoadingOverlay();
+        $('loginScreen').classList.remove('hidden');
+    }
+}
+
+async function initWithTargetUser(targetUid) {
+    let user = Storage.getUsers()[targetUid];
+    if (!user && firestoreDb) {
+        try {
+            const doc = await firestoreDb.collection('users').doc(targetUid).get();
+            if (doc.exists) { user = doc.data(); const us = Storage.getUsers(); us[targetUid] = user; Storage.setUsers(us); }
+        } catch(e) {}
+    }
+    if (!user) { showToast('❌ User not found'); return; }
+    if (firestoreDb) {
+        try {
+            const [bSnap, blSnap] = await Promise.all([
+                firestoreDb.collection('bookings').where('owner','==',targetUid).get(),
+                firestoreDb.collection('blocks').where('owner','==',targetUid).get()
+            ]);
+            const bMap = {}; Storage.getBookings().forEach(b => bMap[b.id]=b); bSnap.forEach(d => bMap[d.id]=d.data()); Storage.setBookings(Object.values(bMap));
+            const blMap = {}; Storage.getBlocks().forEach(b => blMap[b.id]=b); blSnap.forEach(d => blMap[d.id]=d.data()); Storage.setBlocks(Object.values(blMap));
+        } catch(e) {}
+    }
+    const saved = Storage.getCurrentUser();
+    if (saved && saved.id === targetUid) { currentUser = user; enterApp(); syncCurrentUserData(); }
+    else enterPublicView(user);
+}
+
+function initFromSavedSession() {
+    const saved = Storage.getCurrentUser();
+    if (!saved || !saved.id) { hideLoadingOverlay(); return; }
+    const users = Storage.getUsers();
+    if (users[saved.id]) {
+        currentUser = users[saved.id];
+        enterApp();
+        syncCurrentUserData();
+    } else {
+        hideLoadingOverlay();
+    }
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: PAST TIME DETECTION
+   Determines whether a date+hour is in the past.
+══════════════════════════════════════ */
+
+/** Returns true if the given date string is strictly before today */
+function isDateInPast(dateStr) {
+    const today = formatDateToISO(new Date());
+    return dateStr < today;
+}
+
+/** Returns true if the given date string is today */
+function isDateToday(dateStr) {
+    return dateStr === formatDateToISO(new Date());
+}
+
+/** Returns true if a specific hour on a given date has already passed */
+function isHourInPast(dateStr, hour) {
+    if (isDateInPast(dateStr)) return true;
+    if (isDateToday(dateStr))  return hour < new Date().getHours();
+    return false;
+}
+
+/** Returns true if a whole calendar day is entirely in the past */
+function isDayFullyInPast(dateStr) {
+    return isDateInPast(dateStr);
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: DURATION PICKER
+   Quick-select preset durations for bookings.
+══════════════════════════════════════ */
+
+/** Currently selected booking duration in minutes (default 60) */
+let selectedBookingDurationMinutes = 60;
+
+/**
+ * Activate a duration chip and recalculate the end time.
+ * @param {number} durationMinutes - Duration in minutes (30, 60, 90, 120, 180)
+ */
+function selectBookingDuration(durationMinutes) {
+    selectedBookingDurationMinutes = durationMinutes;
+
+    // Update chip visual state
+    document.querySelectorAll('#bookingDurationPicker .duration-chip').forEach(chip => {
+        chip.classList.toggle('active', parseInt(chip.dataset.minutes) === durationMinutes);
+    });
+
+    recalculateBookingEndTime();
+}
+
+/** Recalculate booking end time based on start time + selected duration */
+function recalculateBookingEndTime() {
+    const startTime = $('bookingStart').value;
+    if (!startTime) return;
+
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const totalStartMinutes        = startHour * 60 + startMinute;
+    const totalEndMinutes          = totalStartMinutes + selectedBookingDurationMinutes;
+
+    const endHour   = Math.floor(totalEndMinutes / 60) % 24;
+    const endMinute = totalEndMinutes % 60;
+    $('bookingEnd').value = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+}
+
+/** Reset duration picker to default (60 min) when booking modal opens */
+function resetDurationPicker() {
+    selectedBookingDurationMinutes = 60;
+    document.querySelectorAll('#bookingDurationPicker .duration-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.minutes === '60');
+    });
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: RECURRING BUSY SLOTS
+   Apply the same block to multiple future dates at once.
+══════════════════════════════════════ */
+
+/** Days of the week currently selected in the recurring modal (0=Sun…6=Sat) */
+let selectedRecurrenceDays = [];
+
+/** Open the recurring slots modal and reset its state */
+function openRecurringModal() {
+    selectedRecurrenceDays = [];
+    document.querySelectorAll('.recurrence-day-chip').forEach(chip => chip.classList.remove('selected'));
+    $('recurringStart').value    = '09:00';
+    $('recurringEnd').value      = '10:00';
+    $('recurringLabel').value    = '';
+    $('recurringWeeksAhead').value = '8';
+    $('recurrencePreview').textContent = 'Select days and time to preview…';
+    $('recurringModal').classList.remove('hidden');
+}
+
+/**
+ * Toggle a day-of-week chip in the recurring modal.
+ * @param {number} dayIndex - 0 = Sunday, 6 = Saturday
+ */
+function toggleRecurrenceDay(dayIndex) {
+    const chipEl = document.querySelector(`.recurrence-day-chip[data-day="${dayIndex}"]`);
+    if (selectedRecurrenceDays.includes(dayIndex)) {
+        selectedRecurrenceDays = selectedRecurrenceDays.filter(d => d !== dayIndex);
+        chipEl.classList.remove('selected');
+    } else {
+        selectedRecurrenceDays.push(dayIndex);
+        chipEl.classList.add('selected');
+    }
+    updateRecurrencePreview();
+}
+
+/** Update the preview text showing which dates will be blocked */
+function updateRecurrencePreview() {
+    const previewEl  = $('recurrencePreview');
+    const startTime  = $('recurringStart').value;
+    const endTime    = $('recurringEnd').value;
+    const weeksAhead = parseInt($('recurringWeeksAhead').value) || 8;
+
+    if (!selectedRecurrenceDays.length || !startTime || !endTime) {
+        previewEl.textContent = 'Select days and time to preview…';
+        return;
+    }
+    if (startTime >= endTime) { previewEl.textContent = '❌ End time must be after start time'; return; }
+
+    const affectedDates = buildRecurringDateList(selectedRecurrenceDays, weeksAhead);
+    const DAY_NAMES     = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dayLabels     = selectedRecurrenceDays.map(d => DAY_NAMES[d]).join(', ');
+
+    previewEl.innerHTML = `<strong>${affectedDates.length} slots</strong> will be blocked<br>
+        📅 Every <strong>${dayLabels}</strong> for ${weeksAhead} weeks<br>
+        🕐 ${formatTimeAmPm(...startTime.split(':').map(Number))} – ${formatTimeAmPm(...endTime.split(':').map(Number))}<br>
+        <span style="color:var(--text-light);">From ${affectedDates[0]} to ${affectedDates[affectedDates.length - 1]}</span>`;
+}
+
+/**
+ * Build the list of ISO date strings for all recurrence occurrences.
+ * @param {number[]} daysOfWeek - Array of day indexes (0–6)
+ * @param {number}   weeksAhead - How many weeks to project forward
+ * @returns {string[]} Sorted array of YYYY-MM-DD strings
+ */
+function buildRecurringDateList(daysOfWeek, weeksAhead) {
+    const results  = [];
+    const today    = new Date();
+    const endDate  = new Date();
+    endDate.setDate(today.getDate() + weeksAhead * 7);
+
+    const cursor = new Date(today);
+    while (cursor <= endDate) {
+        if (daysOfWeek.includes(cursor.getDay())) {
+            results.push(formatDateToISO(cursor));
+        }
+        cursor.setDate(cursor.getDate() + 1);
+    }
+    return results;
+}
+
+/** Validate inputs and apply all recurring blocks to storage */
+function applyRecurringBusySlots() {
+    const startTime  = $('recurringStart').value;
+    const endTime    = $('recurringEnd').value;
+    const label      = $('recurringLabel').value.trim() || 'Recurring';
+    const weeksAhead = parseInt($('recurringWeeksAhead').value) || 8;
+
+    if (!selectedRecurrenceDays.length) { showToast('❌ Select at least one day'); return; }
+    if (!startTime || !endTime)         { showToast('❌ Set start and end time'); return; }
+    if (startTime >= endTime)           { showToast('❌ End must be after start'); return; }
+
+    const targetDates     = buildRecurringDateList(selectedRecurrenceDays, weeksAhead);
+    const existingBlocks  = Storage.getBlocks();
+    let   newBlocksCount  = 0;
+    let   skippedCount    = 0;
+
+    targetDates.forEach(dateStr => {
+        const alreadyBlocked = existingBlocks.some(b =>
+            b.owner  === currentUser.id &&
+            b.date   === dateStr        &&
+            b.start  === startTime      &&
+            b.end    === endTime
+        );
+        if (alreadyBlocked) { skippedCount++; return; }
+
+        persistBlock({
+            id:        generateUniqueId(),
+            owner:     currentUser.id,
+            date:      dateStr,
+            start:     startTime,
+            end:       endTime,
+            label:     label,
+            recurring: true,
+            created:   new Date().toISOString()
+        });
+        newBlocksCount++;
+    });
+
+    closeModal('recurringModal');
+    renderCalendar();
+    showToast(`🔁 ${newBlocksCount} recurring slots blocked${skippedCount ? ` (${skippedCount} already existed)` : ''}`);
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: NOTIFICATION REMINDERS
+   Request permission and schedule Web Notifications
+   for upcoming confirmed bookings.
+══════════════════════════════════════ */
+
+/** Minimum minutes before a booking to fire a reminder */
+const BOOKING_REMINDER_MINUTES_BEFORE = 60;
+
+/** Interval ID for the reminder check loop */
+let notificationCheckIntervalId = null;
+
+/** Render the notification permission badge based on current browser permission */
+function renderNotificationPermissionBadge() {
+    const badgeEl = $('notifPermissionBadge');
+    if (!badgeEl) return;
+    if (!('Notification' in window)) {
+        badgeEl.textContent = '🔕 Not supported';
+        badgeEl.className   = 'notif-badge denied';
+        badgeEl.onclick     = null;
+        return;
+    }
+    const permission = Notification.permission;
+    if (permission === 'granted') {
+        badgeEl.innerHTML = '🔔 Reminders On';
+        badgeEl.className = 'notif-badge granted';
+        badgeEl.onclick   = () => showToast('✅ Notifications already enabled');
+    } else if (permission === 'denied') {
+        badgeEl.innerHTML = '🔕 Blocked by browser';
+        badgeEl.className = 'notif-badge denied';
+        badgeEl.onclick   = () => showToast('⚠️ Enable notifications in browser settings');
+    } else {
+        badgeEl.innerHTML = '🔔 Enable Reminders';
+        badgeEl.className = 'notif-badge default';
+        badgeEl.onclick   = requestNotificationPermission;
+    }
+}
+
+/** Ask the user for notification permission and start the reminder loop if granted */
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) { showToast('🔕 Notifications not supported in this browser'); return; }
+    if (Notification.permission === 'granted') { showToast('✅ Notifications already enabled'); return; }
+    if (Notification.permission === 'denied')  { showToast('⚠️ Notifications blocked — enable in browser settings'); return; }
+
+    const permissionResult = await Notification.requestPermission();
+    renderNotificationPermissionBadge();
+    if (permissionResult === 'granted') {
+        showToast('🔔 Reminders enabled! You\'ll be notified 1 hour before bookings.');
+        startBookingReminderLoop();
+    } else {
+        showToast('⚠️ Notification permission denied');
+    }
+}
+
+/**
+ * Fire a browser notification for a booking reminder.
+ * @param {Object} booking - The booking object to notify about
+ */
+function fireBookingReminderNotification(booking) {
+    if (Notification.permission !== 'granted') return;
+
+    const ownerName  = Storage.getUsers()[booking.owner]?.name || 'Someone';
+    const isOutgoing = booking.bookerPhone === currentUser.phone;
+    const title      = isOutgoing ? `📅 Reminder: Appointment with ${ownerName}` : `📅 Upcoming: ${booking.bookerName}`;
+    const body       = `Today at ${booking.start} – ${booking.end}`;
+
+    const notification = new Notification(title, {
+        body,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%236366f1"/><text x="50" y="68" text-anchor="middle" font-size="50">📅</text></svg>',
+        tag:  'calgo-reminder-' + booking.id
+    });
+    notification.onclick = () => { window.focus(); notification.close(); };
+}
+
+/**
+ * Remove localStorage notification-tracking keys from previous days to prevent buildup.
+ * Keys follow the pattern 'notified_YYYY-MM-DD'.
+ */
+function pruneStaleNotificationKeys() {
+    const todayStr = formatDateToISO(new Date());
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+        const rawKey = localStorage.key(i);
+        if (!rawKey) continue;
+        const keyWithoutPrefix = rawKey.replace(/^fc_/, '');
+        if (/^notified_\d{4}-\d{2}-\d{2}$/.test(keyWithoutPrefix)) {
+            const keyDate = keyWithoutPrefix.replace('notified_', '');
+            if (keyDate < todayStr) localStorage.removeItem(rawKey);
+        }
+    }
+}
+
+/**
+ * Check all accepted bookings and fire reminders for those within the reminder window.
+ * Tracks already-notified bookings to avoid duplicate alerts.
+ */
+function checkAndFirePendingReminders() {
+    if (Notification.permission !== 'granted' || !currentUser) return;
+    pruneStaleNotificationKeys();
+
+    const now              = new Date();
+    const todayStr         = formatDateToISO(now);
+    const currentMinutes   = now.getHours() * 60 + now.getMinutes();
+    const notifiedKey      = 'notified_' + todayStr;
+    const alreadyNotified  = Storage.getRaw(notifiedKey) || [];
+
+    const todaysAcceptedBookings = Storage.getBookings().filter(b =>
+        b.status === 'accepted' &&
+        b.date   === todayStr   &&
+        (b.owner === currentUser.id || b.bookerPhone === currentUser.phone)
+    );
+
+    todaysAcceptedBookings.forEach(booking => {
+        if (alreadyNotified.includes(booking.id)) return;
+
+        const [bookingHour, bookingMinute] = booking.start.split(':').map(Number);
+        const bookingTotalMinutes = bookingHour * 60 + bookingMinute;
+        const minutesUntilBooking = bookingTotalMinutes - currentMinutes;
+
+        if (minutesUntilBooking > 0 && minutesUntilBooking <= BOOKING_REMINDER_MINUTES_BEFORE) {
+            fireBookingReminderNotification(booking);
+            alreadyNotified.push(booking.id);
+            Storage.setRaw(notifiedKey, alreadyNotified);
+        }
+    });
+}
+
+/** Start polling every 5 minutes for upcoming booking reminders */
+function startBookingReminderLoop() {
+    if (notificationCheckIntervalId) return; // Already running
+    checkAndFirePendingReminders(); // Run immediately once
+    notificationCheckIntervalId = setInterval(checkAndFirePendingReminders, 5 * 60 * 1000);
+}
+
+/** Stop the reminder polling loop */
+function stopBookingReminderLoop() {
+    if (notificationCheckIntervalId) {
+        clearInterval(notificationCheckIntervalId);
+        notificationCheckIntervalId = null;
+    }
+}
+
+/** Initialize notifications on app load if permission already granted */
+function initNotificationReminders() {
+    renderNotificationPermissionBadge();
+    if ('Notification' in window && Notification.permission === 'granted') {
+        startBookingReminderLoop();
+    }
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: LOADING OVERLAY
+   Shows a branded spinner while auth/data loads.
+   Hides itself with a fade when the app is ready.
+══════════════════════════════════════ */
+
+/**
+ * Show the loading overlay with a custom status message.
+ * @param {string} message - Text shown below the spinner
+ */
+function showLoadingOverlay(message) {
+    const overlayEl  = $('loadingOverlay');
+    const messageEl  = $('loadingMessage');
+    if (!overlayEl) return;
+    if (messageEl) messageEl.textContent = message || 'Loading…';
+    overlayEl.classList.remove('fade-out');
+    overlayEl.style.display = 'flex';
+}
+
+/**
+ * Hide the loading overlay with a smooth fade-out animation.
+ * Removes it from the DOM flow after the transition completes.
+ */
+function hideLoadingOverlay() {
+    const overlayEl = $('loadingOverlay');
+    if (!overlayEl) return;
+    overlayEl.classList.add('fade-out');
+    setTimeout(() => { overlayEl.style.display = 'none'; }, 500);
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: REMEMBER LOGIN
+   Persists the user session across visits.
+   Controlled by the "Remember me" checkbox on the login screen.
+══════════════════════════════════════ */
+
+const REMEMBER_ME_STORAGE_KEY = 'remember_me';
+
+/** Returns true if the user opted in to being remembered */
+function isRememberMeEnabled() {
+    return Storage.getRaw(REMEMBER_ME_STORAGE_KEY) === true;
+}
+
+/** Save the remember-me preference from the login checkbox */
+function saveRememberMePreference() {
+    const checkboxEl = $('rememberMeCheckbox');
+    const isChecked  = checkboxEl ? checkboxEl.checked : true;
+    Storage.setRaw(REMEMBER_ME_STORAGE_KEY, isChecked);
+}
+
+/**
+ * Check on app start if a remembered session exists and auto-login.
+ * Returns true if a valid remembered session was found and restored.
+ * @returns {boolean}
+ */
+function tryAutoLoginFromRememberedSession() {
+    if (!isRememberMeEnabled()) return false;
+    const savedUser = Storage.getCurrentUser();
+    if (!savedUser || !savedUser.id) return false;
+    const allUsers = Storage.getUsers();
+    if (!allUsers[savedUser.id]) return false;
+    return true;
+}
+
+/** Clear the remembered session on logout */
+function clearRememberedSession() {
+    Storage.setCurrentUser(null);
+    Storage.setRaw(REMEMBER_ME_STORAGE_KEY, false);
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: INVITE DURATION PICKER
+   Shared duration chip logic for both
+   single-invite and group-invite modals.
+══════════════════════════════════════ */
+
+/** Currently selected invite durations per modal type */
+const inviteSelectedDurationMinutes = { single: 60, group: 60 };
+
+/**
+ * Select a duration chip for a given invite modal type.
+ * Updates the active chip and recalculates the end time.
+ * @param {'single'|'group'} modalType
+ * @param {number} durationMinutes
+ */
+function selectInviteDuration(modalType, durationMinutes) {
+    inviteSelectedDurationMinutes[modalType] = durationMinutes;
+
+    const pickerId = modalType === 'single' ? 'singleInviteDurationPicker' : 'groupInviteDurationPicker';
+    document.querySelectorAll(`#${pickerId} .duration-chip`).forEach(chip => {
+        chip.classList.toggle('active', parseInt(chip.dataset.minutes) === durationMinutes);
+    });
+
+    recalculateInviteEndTime(modalType);
+}
+
+/**
+ * Recalculate the end time field based on start time + selected duration.
+ * @param {'single'|'group'} modalType
+ */
+function recalculateInviteEndTime(modalType) {
+    const startInputId = modalType === 'single' ? 'singleInviteStart' : 'groupInviteStart';
+    const endInputId   = modalType === 'single' ? 'singleInviteEnd'   : 'groupInviteEnd';
+    const startTime    = $(startInputId).value;
+    if (!startTime) return;
+
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const totalStartMinutes        = startHour * 60 + startMinute;
+    const totalEndMinutes          = totalStartMinutes + inviteSelectedDurationMinutes[modalType];
+    const endHour                  = Math.floor(totalEndMinutes / 60) % 24;
+    const endMinute                = totalEndMinutes % 60;
+    $(endInputId).value = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+}
+
+/** Reset invite duration picker for a modal type back to default (60 min) */
+function resetInviteDurationPicker(modalType) {
+    inviteSelectedDurationMinutes[modalType] = 60;
+    const pickerId = modalType === 'single' ? 'singleInviteDurationPicker' : 'groupInviteDurationPicker';
+    document.querySelectorAll(`#${pickerId} .duration-chip`).forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.minutes === '60');
+    });
+}
+
+
+/* ══════════════════════════════════════
+   FEATURE: ADD INVITATION TO CALGO
+   Handles the "Add to Calgo" button on the
+   invitation landing page.
+══════════════════════════════════════ */
+
+/**
+ * Add an invitation event directly to the user's Calgo calendar.
+ * If the user is logged in: adds the block immediately.
+ * If not logged in: saves as pending and redirects to login.
+ * @param {string} encodedTitle - URL-encoded event title
+ * @param {string} dateStr      - YYYY-MM-DD
+ * @param {string} startTime    - HH:MM
+ * @param {string} endTime      - HH:MM
+ */
+function addInvitationToCalgo(encodedTitle, dateStr, startTime, endTime) {
+    const decodedTitle = decodeURIComponent(encodedTitle);
+
+    // Save as pending — works for both logged-in and logged-out users
+    Storage.setRaw('pending_add', {
+        title: decodedTitle,
+        dt:    dateStr,
+        st:    startTime,
+        en:    endTime || startTime
+    });
+
+    const savedUser = Storage.getCurrentUser();
+    const allUsers  = Storage.getUsers();
+    const isLoggedIn = savedUser && savedUser.id && allUsers[savedUser.id] && isRememberMeEnabled();
+
+    if (isLoggedIn) {
+        // Redirect to the app — processPendingCalendarAdd() will handle it after enterApp()
+        window.location.href = getBaseUrl();
+    } else {
+        // Show feedback then redirect to login
+        const confirmBtnEl = document.querySelector('#calOpts button');
+        if (confirmBtnEl) {
+            confirmBtnEl.textContent = '✅ Saved! Redirecting to login…';
+            confirmBtnEl.style.background = '#22c55e';
+        }
+        setTimeout(() => { window.location.href = getBaseUrl(); }, 1200);
+    }
+}
+
+init();
+</script>
+</body>
+</html>
