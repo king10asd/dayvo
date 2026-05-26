@@ -2278,7 +2278,7 @@ function buildInviteMessage(date, start, end, note) {
     const ef      = buildGoogleCalendarDateTime(date, end);
     const gcal    = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${sf}/${ef}&details=${encodeURIComponent(note || '')}`;
     const calgoUrl = buildShareUrl(currentUser.id) + `&event=1&title=${title}&dt=${date}&st=${start}&en=${end}&note=${encodeURIComponent(note || '')}`;
-    return `You received an invitation from ${currentUser.name} 📅\n\nDate: ${date}\nTime: ${time}\n${note ? 'Note: ' + note + '\n' : ''}\nAdd to your calendar:\n👉 ${calgoUrl}\n\nOr open in Google Calendar:\n👉 ${gcal}\n\n— Sent via Calgo: https://king10asd.github.io/dayvo/`;
+    return `You received an invitation from ${currentUser.name} 📅\n\nDate: ${date}\nTime: ${time}\n${note ? 'Note: ' + note + '\n' : ''}\nAdd to your calendar:\n👉 ${calgoUrl}\n\nOr open in Google Calendar:\n👉 ${gcal}\n\n— Sent via Calgo: https://king10asd.github.io/Calgo/`;
 }
 
 function sendSingleInviteViaWhatsApp() {
@@ -2406,14 +2406,14 @@ function handleEventUrl(params) {
             <h2 style="margin:0 0 15px;font-size:20px;color:#1e293b;line-height:1.4;">You received an invitation from <strong>${inviter}</strong> on ${date} at ${displayTime}.<br><br>Shall I add this to your Calendar?</h2>
             <div style="display:flex;gap:10px;margin-top:25px;">
                 <button onclick="document.getElementById('calOpts').style.display='block';this.style.display='none';document.getElementById('noBtn').style.display='none'" style="flex:1;background:#22c55e;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">Yes</button>
-                <button id="noBtn" onclick="window.location.href='https://king10asd.github.io/dayvo/'" style="flex:1;background:#ef4444;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">No</button>
+                <button id="noBtn" onclick="window.location.href='https://king10asd.github.io/Calgo/'" style="flex:1;background:#ef4444;color:white;border:none;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;cursor:pointer;">No</button>
             </div>
             <div id="calOpts" style="display:none;margin-top:15px;">
                 <p style="margin-bottom:10px;font-size:14px;color:#64748b;">Choose your calendar:</p>
                 <button onclick="addInvitationToCalgo('${encodeURIComponent(title)}','${date}','${start}','${end || start}')" style="display:block;width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;border:none;cursor:pointer;font-size:15px;">📅 Add to Calgo</button>
                 <a href="${gcal}" target="_blank" style="display:block;background:#4285F4;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;">Google Calendar</a>
                 <a href="${icsUrl}" download="meeting.ics" style="display:block;background:#1e293b;color:white;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px;">Apple / Outlook</a>
-                <a href="https://king10asd.github.io/dayvo/" style="display:block;margin-top:20px;color:#6366f1;font-weight:bold;text-decoration:none;font-size:14px;">Try Calgo!</a>
+                <a href="https://king10asd.github.io/Calgo/" style="display:block;margin-top:20px;color:#6366f1;font-weight:bold;text-decoration:none;font-size:14px;">Try Calgo!</a>
             </div>
         </div>
     </div>`;
@@ -2455,9 +2455,9 @@ async function init() {
     const params      = new URLSearchParams(window.location.search);
     const targetUid   = params.get('user');
     const isEventLink = params.get('event');
-    const addToDayvo  = params.get('add_dayvo');
+    const addToCalgo  = params.get('add_Calgo');
 
-    if (addToDayvo) {
+    if (addToCalgo) {
         Storage.setRaw('pending_add', { title: params.get('title'), dt: params.get('dt'), st: params.get('st'), en: params.get('en') });
         window.history.replaceState({}, '', getBaseUrl());
     } else if (isEventLink) {
