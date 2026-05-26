@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50'>📅</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -597,30 +598,39 @@
                 </div>
                 <!-- Add Friend Panel -->
                 <div id="addFriendBox" class="hidden" style="background:#f8fafc;border-radius:14px;border:2px dashed var(--border);padding:14px;margin-bottom:12px;">
-                    <div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">Add by phone number:</div>
-                    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
-                        <div class="phone-field" style="margin:0;flex:1;min-width:180px;">
-                            <select id="addFriendCountryCode" style="margin:0;width:90px;padding:10px 4px;font-size:11px;">
-                                <option value="966">🇸🇦 +966</option>
-                                <option value="971">🇦🇪 +971</option>
-                                <option value="965">🇰🇼 +965</option>
-                                <option value="974">🇶🇦 +974</option>
-                                <option value="973">🇧🇭 +973</option>
-                                <option value="968">🇴🇲 +968</option>
-                                <option value="962">🇯🇴 +962</option>
-                                <option value="20">🇪🇬 +20</option>
-                                <option value="1">🇺🇸 +1</option>
-                                <option value="44">🇬🇧 +44</option>
-                            </select>
-                            <input type="tel" id="addFriendPhone" placeholder="5xxxxxxxx" style="margin:0;"
-                                onkeydown="if(event.key==='Enter') searchAndAddFriendByPhone()">
-                        </div>
-                        <button onclick="searchAndAddFriendByPhone()"
-                            style="width:auto;padding:10px 16px;margin:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;font-size:13px;cursor:pointer;">
-                            Find
+                    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">Add a Friend</div>
+                    
+                    <!-- URL Paste -->
+                    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+                        <input type="text" id="addFriendUrlInput" placeholder="Paste friend's Calgo link here..." style="margin:0;flex:1;min-width:180px;font-size:12px;padding:10px;" onkeydown="if(event.key==='Enter') processFriendUrlInput()">
+                        <button onclick="processFriendUrlInput()" style="width:auto;padding:10px 16px;margin:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;border:none;border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;">
+                            Add
                         </button>
                     </div>
-                    <div style="font-size:11px;color:var(--text-light);margin-top:8px;">Or share your link below — friends who open it are added automatically.</div>
+                    
+                    <div style="display:flex;gap:7px;margin-bottom:10px;">
+                        <button onclick="startCameraQrScanner()" style="flex:1;padding:10px;background:#eef2ff;color:var(--primary);border:2px solid var(--border);border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;">
+                            📸 Scan QR
+                        </button>
+                        <button onclick="document.getElementById('qrImageUploadInput').click()" style="flex:1;padding:10px;background:#eef2ff;color:var(--primary);border:2px solid var(--border);border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;">
+                            🖼️ Upload QR
+                        </button>
+                        <input type="file" id="qrImageUploadInput" accept="image/*" class="hidden" onchange="processUploadedQrImage(this)">
+                    </div>
+                    
+                    <div id="qrScannerContainer" style="display:none;margin-bottom:10px;border-radius:12px;overflow:hidden;border:2px solid var(--primary);"></div>
+                    <button id="cancelQrScannerBtn" onclick="stopCameraQrScanner()" class="hidden" style="width:100%;padding:8px;background:#fee2e2;color:var(--danger);border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;margin-bottom:10px;">Cancel Scan</button>
+
+                    <div id="contactPickerContainer" style="display:none;">
+                        <button onclick="openDeviceContacts()" style="width:100%;padding:10px;background:#f1f5f9;color:var(--text);border:2px solid var(--border);border-radius:11px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            📱 Import from Phone Contacts
+                        </button>
+                    </div>
+                    <script>
+                        if ('contacts' in navigator && 'ContactsManager' in window) {
+                            document.getElementById('contactPickerContainer').style.display = 'block';
+                        }
+                    </script>
                 </div>
                 <div id="friendsList"></div>
             </div>
@@ -1344,35 +1354,199 @@ function handleAvatarUpload(inputEl) {
    FRIENDS
 ══════════════════════════════════════ */
 
-async function searchAndAddFriendByPhone() {
-    const countryCode = $('addFriendCountryCode').value;
-    const phoneNumber = $('addFriendPhone').value.trim().replace(/^0+/, '');
-    if (!phoneNumber) { showToast('❌ Enter a phone number'); return; }
-    const fullPhone = '+' + countryCode + phoneNumber;
-    const altPhone  = countryCode + phoneNumber;
-    const users     = Storage.getUsers();
-    let foundUser   = Object.values(users).find(u => u.phone === fullPhone || u.phone === altPhone);
-    if (!foundUser && firestoreDb) foundUser = await searchUserInFirestore(fullPhone, altPhone);
-    if (!foundUser)                     { showToast('❌ No user found with that number'); return; }
-    if (foundUser.id === currentUser.id) { showToast('⚠️ That\'s your own number!'); return; }
-    addFriend(foundUser); renderFriends();
-    $('addFriendPhone').value = ''; $('addFriendBox').classList.add('hidden');
-    showToast('✅ ' + foundUser.name + ' added to friends!');
-}
-
-async function searchUserInFirestore(fullPhone, altPhone) {
+async function openDeviceContacts() {
+    if (!('contacts' in navigator && 'ContactsManager' in window)) {
+        showToast('❌ Not supported on this device/browser');
+        return;
+    }
     try {
-        showToast('🔍 Searching…');
-        for (const phone of [fullPhone, altPhone]) {
-            const snap = await firestoreDb.collection('users').where('phone', '==', phone).limit(1).get();
-            if (!snap.empty) {
-                const data = snap.docs[0].data();
-                const users = Storage.getUsers(); users[data.id] = data; Storage.setUsers(users);
-                return data;
+        const props = ['name', 'tel'];
+        const opts  = { multiple: true };
+        const contacts = await navigator.contacts.select(props, opts);
+        
+        if (!contacts.length) return;
+        
+        showLoadingOverlay('Importing contacts…');
+        let addedCount = 0;
+        
+        for (const contact of contacts) {
+            if (!contact.tel || !contact.tel.length) continue;
+            const rawPhone = contact.tel[0];
+            const digitsOnly = rawPhone.replace(/\D/g, '');
+            if (digitsOnly.length < 5) continue;
+            
+            const users = Storage.getUsers();
+            let foundUser = Object.values(users).find(u => {
+                if (!u.phone) return false;
+                return u.phone.replace(/\D/g, '') === digitsOnly;
+            });
+            
+            if (!foundUser && firestoreDb) {
+                const snap1 = await firestoreDb.collection('users').where('phone', '==', digitsOnly).limit(1).get();
+                if (!snap1.empty) {
+                    foundUser = snap1.docs[0].data();
+                } else {
+                    const snap2 = await firestoreDb.collection('users').where('phone', '==', '+' + digitsOnly).limit(1).get();
+                    if (!snap2.empty) foundUser = snap2.docs[0].data();
+                }
+            }
+            
+            if (foundUser && foundUser.id !== currentUser.id) {
+                addFriend(foundUser);
+                addedCount++;
             }
         }
-    } catch (e) { console.error(e); }
-    return null;
+        
+        hideLoadingOverlay();
+        renderFriends();
+        $('addFriendBox').classList.add('hidden');
+        
+        if (addedCount > 0) {
+            showToast(`✅ Imported ${addedCount} friend(s)!`);
+        } else {
+            showToast('⚠️ No contacts found who are using Calgo');
+        }
+    } catch (e) {
+        hideLoadingOverlay();
+        console.error('Contact Picker Error:', e);
+        if (e.name !== 'TypeError' && e.name !== 'AbortError' && e.name !== 'NotAllowedError') {
+             showToast('❌ Error reading contacts');
+        }
+    }
+}
+
+let html5QrCode = null;
+
+async function processFriendUrlInput() {
+    const urlString = $('addFriendUrlInput').value.trim();
+    if (!urlString) { showToast('❌ Please paste a valid link'); return; }
+    
+    const userId = extractUserIdFromUrl(urlString);
+    if (!userId) { showToast('❌ Invalid Calgo link'); return; }
+    
+    await fetchAndAddFriendById(userId);
+    $('addFriendUrlInput').value = '';
+}
+
+function extractUserIdFromUrl(urlString) {
+    try {
+        const url = new URL(urlString);
+        return url.searchParams.get('user');
+    } catch (e) {
+        const match = urlString.match(/user=([^&]+)/);
+        return match ? decodeURIComponent(match[1]) : null;
+    }
+}
+
+async function fetchAndAddFriendById(targetUserId) {
+    if (!targetUserId) return;
+    if (currentUser && targetUserId === currentUser.id) {
+        showToast("⚠️ You can't add yourself as a friend!");
+        return;
+    }
+
+    showLoadingOverlay('Finding user...');
+    try {
+        let foundUser = Storage.getUsers()[targetUserId];
+        
+        if (!foundUser && firestoreDb) {
+            const doc = await firestoreDb.collection('users').doc(targetUserId).get();
+            if (doc.exists) {
+                foundUser = doc.data();
+                const users = Storage.getUsers();
+                users[targetUserId] = foundUser;
+                Storage.setUsers(users);
+            }
+        }
+        
+        hideLoadingOverlay();
+        
+        if (foundUser) {
+            addFriend(foundUser);
+            renderFriends();
+            $('addFriendBox').classList.add('hidden');
+            showToast(`✅ ${foundUser.name} added to friends!`);
+        } else {
+            showToast('❌ User not found');
+        }
+    } catch (e) {
+        hideLoadingOverlay();
+        console.error('Error fetching friend:', e);
+        showToast('❌ Error adding friend');
+    }
+}
+
+async function startCameraQrScanner() {
+    const container = $('qrScannerContainer');
+    const cancelBtn = $('cancelQrScannerBtn');
+    
+    container.style.display = 'block';
+    cancelBtn.classList.remove('hidden');
+    
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qrScannerContainer");
+    }
+    
+    try {
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText, decodedResult) => {
+                stopCameraQrScanner();
+                handleScannedQrResult(decodedText);
+            },
+            (errorMessage) => {
+                // Ignore routine scanning errors
+            }
+        );
+    } catch (err) {
+        console.error("QR Scanner init error:", err);
+        showToast("❌ Could not start camera. Please check permissions.");
+        stopCameraQrScanner();
+    }
+}
+
+async function stopCameraQrScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        try {
+            await html5QrCode.stop();
+        } catch (err) {
+            console.error("Error stopping scanner:", err);
+        }
+    }
+    $('qrScannerContainer').style.display = 'none';
+    $('cancelQrScannerBtn').classList.add('hidden');
+}
+
+async function processUploadedQrImage(fileInput) {
+    if (!fileInput.files || fileInput.files.length === 0) return;
+    const file = fileInput.files[0];
+    
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qrScannerContainer");
+    }
+    
+    showLoadingOverlay('Scanning image...');
+    try {
+        const decodedText = await html5QrCode.scanFile(file, true);
+        hideLoadingOverlay();
+        fileInput.value = '';
+        handleScannedQrResult(decodedText);
+    } catch (err) {
+        hideLoadingOverlay();
+        console.error("QR Scan File Error:", err);
+        showToast("❌ No QR code found in this image");
+        fileInput.value = '';
+    }
+}
+
+function handleScannedQrResult(decodedText) {
+    const userId = extractUserIdFromUrl(decodedText);
+    if (userId) {
+        fetchAndAddFriendById(userId);
+    } else {
+        showToast("❌ This is not a valid Calgo QR code");
+    }
 }
 
 function addFriend(friendUser) {
